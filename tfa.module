@@ -43,7 +43,7 @@ function tfa_entry_access($account, $url_hash) {
 }
 
 function tfa_user_login($account) {
-  if (!\Drupal::config('tfa.settings')->get('tfa_enabled')) {
+  if (!\Drupal::config('tfa.settings')->get('enabled')) {
     drupal_set_message(t('TFA is not enabled.'));
     return;
   }
@@ -96,7 +96,7 @@ function tfa_form_alter(&$form, &$form_state, $form_id) {
   switch ($form_id) {
     case 'user_login_form':
     case 'user_login_block':
-      if (\Drupal::config('tfa.settings')->get('tfa_enabled')) {
+      if (\Drupal::config('tfa.settings')->get('enabled')) {
         // Replace Drupal's login submit handler with TFA to check if
         // authentication should be interrupted and user redirected to TFA form.
         // Replacing user_login_submit() in its position allows other form_alter
@@ -242,12 +242,12 @@ function _tfa_start_context($account) {
   $fallback_plugins = array();
 
   $api = \Drupal::moduleHandler()->invokeAll('tfa_api', []);
-  if (\Drupal::config('tfa.settings')->get('tfa_login_plugins')) {
-    $plugins = \Drupal::config('tfa.settings')->get('tfa_login_plugins');
+  if (\Drupal::config('tfa.settings')->get('login_plugins')) {
+    $plugins = \Drupal::config('tfa.settings')->get('login_plugins');
   }
-  if (\Drupal::config('tfa.settings')->get('tfa_fallback_plugins')) {
-    $fallback_plugins = \Drupal::config('tfa.settings')
-      ->get('tfa_fallback_plugins');
+
+  if (\Drupal::config('tfa.settings')->get('fallback_plugins')) {
+    $fallback_plugins = \Drupal::config('tfa.settings')->get('fallback_plugins');
   }
 
   // Add login plugins.
@@ -257,7 +257,7 @@ function _tfa_start_context($account) {
     }
   }
   // Add validate.
-  $validate = \Drupal::config('tfa.settings')->get('tfa_validate_plugin');
+  $validate = \Drupal::config('tfa.settings')->get('validate_plugin');
   if (!empty($validate) && array_key_exists($validate, $api)) {
     $context['plugins']['validate'] = $api[$validate]['class'];
   }

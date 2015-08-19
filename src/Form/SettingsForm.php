@@ -71,7 +71,7 @@ class SettingsForm extends ConfigFormBase {
     $form['tfa_enabled'] = array(
       '#type' => 'checkbox',
       '#title' => t('Enable TFA'),
-      '#default_value' => $config->get('tfa_enabled'),
+      '#default_value' => $config->get('enabled'),
       '#description' => t('Enable TFA for account authentication.'),
     );
 
@@ -79,7 +79,7 @@ class SettingsForm extends ConfigFormBase {
     if (count($validate_plugins)) {
 
       //order plugins by weight
-      $weights = ($config->get('tfa_validate_weights')) ? $config->get('tfa_validate_weights') : array();
+      $weights = ($config->get('validate_weights')) ? $config->get('validate_weights') : array();
 
       //sort weight array by weight
       asort($weights);
@@ -99,7 +99,7 @@ class SettingsForm extends ConfigFormBase {
             'group' => 'validate-plugins-order-weight',
           ),
         ),
-        //'#default_value' => ($config->get('tfa_validate_plugins'))?$config->get('tfa_validate_plugins'):array(),
+        //'#default_value' => ($config->get('validate_plugins'))?$config->get('validate_plugins'):array(),
       );
 
       //add unregistered plugins to weighted array
@@ -124,7 +124,7 @@ class SettingsForm extends ConfigFormBase {
         $form['validate_plugins'][$id]['enabled'] = array(
           '#type' => 'checkbox',
           '#return_value' => $id,
-          '#default_value' => (in_array($id, $config->get('tfa_validate_plugins')) ? $id : '0')
+          '#default_value' => (in_array($id, $config->get('validate_plugins')) ? $id : '0')
         );
 
         $form['validate_plugins'][$id]['title'] = array(
@@ -166,7 +166,7 @@ class SettingsForm extends ConfigFormBase {
         '#type' => 'checkboxes',
         '#title' => t('Login plugins'),
         '#options' => $login_form_array,
-        '#default_value' => ($config->get('tfa_login_plugins')) ? $config->get('tfa_login_plugins') : array(),
+        '#default_value' => ($config->get('login_plugins')) ? $config->get('login_plugins') : array(),
         '#description' => t('Plugins that can allow a user to skip the TFA process. If any plugin returns true the user will not be required to follow TFA. <strong>Use with caution.</strong>'),
       );
     }
@@ -185,7 +185,7 @@ class SettingsForm extends ConfigFormBase {
         '#type' => 'checkboxes',
         '#title' => t('Send plugins'),
         '#options' => $send_form_array,
-        '#default_value' => ($config->get('tfa_send_plugins')) ? $config->get('tfa_send_plugins') : array(),
+        '#default_value' => ($config->get('send_plugins')) ? $config->get('send_plugins') : array(),
         //TODO - Fill in description
         '#description' => t('Not sure what this is'),
       );
@@ -205,7 +205,7 @@ class SettingsForm extends ConfigFormBase {
         '#type' => 'checkboxes',
         '#title' => t('Setup plugins'),
         '#options' => $setup_form_array,
-        '#default_value' => ($config->get('tfa_setup_plugins')) ? $config->get('tfa_setup_plugins') : array(),
+        '#default_value' => ($config->get('setup_plugins')) ? $config->get('setup_plugins') : array(),
         //TODO - Fill in description
         '#description' => t('Not sure what this is'),
       );
@@ -239,12 +239,12 @@ class SettingsForm extends ConfigFormBase {
     }
 
     $this->config('tfa.settings')
-      ->set('tfa_enabled', $form_state->getValue('tfa_enabled'))
-      ->set('tfa_setup_plugins', array_filter($form_state->getValue('tfa_setup')))
-      ->set('tfa_send_plugins', array_filter($form_state->getValue('tfa_send')))
-      ->set('tfa_login_plugins', array_filter($form_state->getValue('tfa_login')))
-      ->set('tfa_validate_plugins', $validate_plugins)
-      ->set('tfa_validate_weights', $validate_weights)
+      ->set('enabled', $form_state->getValue('enabled'))
+      ->set('setup_plugins', array_filter($form_state->getValue('tfa_setup')))
+      ->set('send_plugins', array_filter($form_state->getValue('tfa_send')))
+      ->set('login_plugins', array_filter($form_state->getValue('tfa_login')))
+      ->set('validate_plugins', $validate_plugins)
+      ->set('validate_weights', $validate_weights)
       ->save();
 
     parent::submitForm($form, $form_state);
