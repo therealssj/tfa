@@ -10,8 +10,7 @@ use Drupal\tfa\Tfa;
 /**
  * Implements hook_help().
  */
-function tfa_help($route_name, RouteMatchInterface $route_match)
-{
+function tfa_help($route_name, RouteMatchInterface $route_match) {
   switch ($route_name) {
     // Main module help for the tfa module.
     case 'help.page.tfa':
@@ -19,15 +18,14 @@ function tfa_help($route_name, RouteMatchInterface $route_match)
       $output .= '<h3>' . t('About') . '</h3>';
       $output .= '<p>' . t('Pluggable provider of second factor authentication for Drupal') . '</p>';
       return $output;
-    break;
+      break;
   }
 }
 
 /**
  * Implements hook_theme().
  */
-function tfa_theme()
-{
+function tfa_theme() {
   $theme = [];
 
   return $theme;
@@ -108,7 +106,7 @@ function tfa_form_alter(&$form, &$form_state, $form_id) {
         // options element as needed to set the destination after TFA.
         $key = array_search('::submitForm', $form['#submit']);
         $form['#submit'][$key] = 'tfa_login_submit';
-        $form['#submit'][]     = 'tfa_login_form_redirect';
+        $form['#submit'][] = 'tfa_login_form_redirect';
       }
       break;
   }
@@ -152,7 +150,7 @@ function tfa_login_submit($form, &$form_state) {
       flood_clear_event('tfa_validate');
       flood_register_event('tfa_begin');
       $context = tfa_start_context($account);
-      $tfa     = tfa_get_process($account);
+      $tfa = tfa_get_process($account);
 
       $query = drupal_get_query_parameters();
       if (!empty($form_state['redirect'])) {
@@ -167,7 +165,7 @@ function tfa_login_submit($form, &$form_state) {
       $context = $tfa->getContext();
       tfa_set_context($account, $context);
 
-      $login_hash                 = tfa_login_hash($account);
+      $login_hash = tfa_login_hash($account);
       $form_state['tfa_redirect'] = array(
         'system/tfa/' . $account->uid . '/' . $login_hash,
         array('query' => $query),
@@ -182,7 +180,7 @@ function tfa_login_submit($form, &$form_state) {
     drupal_set_message(t('Two-factor authentication is enabled but misconfigured. Please contact a site administrator.'), 'error');
     $form_state->setRedirect('user.page');
   }
- }
+}
 
 /**
  * Get Tfa object in the account's current context.
@@ -200,8 +198,7 @@ function _tfa_get_process($account) {
     try {
       // instansiate all plugins
       $tfa = new Tfa($context['plugins'], $context);
-    }
-    catch (\Exception $e) {
+    } catch (\Exception $e) {
       $tfa = FALSE;
     }
   }
@@ -213,7 +210,7 @@ function _tfa_get_process($account) {
  *
  * @param $account Drupal\user\Entity\User account
  * @return array
- *   @see _tfa_start_context() for format
+ * @see _tfa_start_context() for format
  */
 function _tfa_get_context(Drupal\user\Entity\User $account) {
   $context = array();
@@ -249,7 +246,8 @@ function _tfa_start_context($account) {
     $plugins = \Drupal::config('tfa.settings')->get('tfa_login_plugins');
   }
   if (\Drupal::config('tfa.settings')->get('tfa_fallback_plugins')) {
-    $fallback_plugins = \Drupal::config('tfa.settings')->get('tfa_fallback_plugins');
+    $fallback_plugins = \Drupal::config('tfa.settings')
+      ->get('tfa_fallback_plugins');
   }
 
   // Add login plugins.
@@ -280,7 +278,7 @@ function _tfa_start_context($account) {
  *
  * @param $account User account
  * @param array $context Context array
- *   @see tfa_start_context() for context format
+ * @see tfa_start_context() for context format
  */
 function _tfa_set_context($account, $context) {
   $_SESSION['tfa'][$account->id] = $context;
