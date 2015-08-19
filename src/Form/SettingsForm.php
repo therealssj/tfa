@@ -239,7 +239,7 @@ class SettingsForm extends ConfigFormBase {
     }
 
     $this->config('tfa.settings')
-      ->set('enabled', $form_state->getValue('enabled'))
+      ->set('enabled', $form_state->getValue('tfa_enabled'))
       ->set('setup_plugins', array_filter($form_state->getValue('tfa_setup')))
       ->set('send_plugins', array_filter($form_state->getValue('tfa_send')))
       ->set('login_plugins', array_filter($form_state->getValue('tfa_login')))
