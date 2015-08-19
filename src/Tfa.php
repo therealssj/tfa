@@ -7,7 +7,7 @@
 
 namespace Drupal\tfa;
 
-use Drupal\Component\Utility\String;
+use Drupal\Component\Utility\SafeMarkup;
 
 /**
  * Class Tfa
@@ -78,12 +78,12 @@ class Tfa {
 
     if (empty($plugins)) {
       throw new \RuntimeException(
-        String::format('TFA must have at least 1 valid plugin',
+        SafeMarkup::format('TFA must have at least 1 valid plugin',
           array('@function' => 'Tfa::__construct')));
     }
     if (empty($plugins['validate'])) {
       throw new \RuntimeException(
-        String::format('TFA must have at least 1 valid plugin',
+        SafeMarkup::format('TFA must have at least 1 valid plugin',
           array('@function' => 'Tfa::__construct')));
     }
 
@@ -286,15 +286,3 @@ class Tfa {
   }
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
