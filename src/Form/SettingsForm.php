@@ -9,7 +9,7 @@ namespace Drupal\tfa\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Component\Utility\String;
+use Drupal\Component\Utility\SafeMarkup;
 
 class SettingsForm extends ConfigFormBase {
 
@@ -128,7 +128,7 @@ class SettingsForm extends ConfigFormBase {
         );
 
         $form['validate_plugins'][$id]['title'] = array(
-          '#markup' => String::checkPlain($title),
+          '#markup' => SafeMarkup::checkPlain($title),
         );
 
         // TableDrag: Weight column element.
