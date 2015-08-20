@@ -1,9 +1,13 @@
 <?php
 
+namespace Drupal\tfa\Plugin;
+
+use Drupal\Component\Plugin\PluginBase;
+
 /**
  * Base plugin class.
  */
-abstract class TfaBasePlugin extends PluginManagerBase {
+abstract class TfaBasePlugin extends PluginBase {
 
   /**
    * @var string
@@ -40,7 +44,6 @@ abstract class TfaBasePlugin extends PluginManagerBase {
    *
    * @param array $context
    *   Context of current TFA process.
-   * @param array $namespaces
    *   An array of paths keyed by their corresponding namespaces.
    *
    *   Must include key:
@@ -55,6 +58,7 @@ abstract class TfaBasePlugin extends PluginManagerBase {
    *
    *     - 'setup_context'
    *       Plugin-specific context for use during TfaSetup.
+   *
    */
   public function __construct(array $context = array()) {
     $this->context = $context;

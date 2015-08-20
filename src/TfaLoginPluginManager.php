@@ -10,9 +10,10 @@ use Drupal\Core\Plugin\Discovery\AnnotatedClassDiscovery;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Language\LanguageManager;
+use Drupal\Core\Plugin\DefaultPluginManager;
 
 
-class TfaLoginPluginManager extends \Drupal\Core\Plugin\DefaultPluginManager {
+class TfaLoginPluginManager extends DefaultPluginManager {
   /**
    * Constructs a new TfaLogin plugin manager.
    *

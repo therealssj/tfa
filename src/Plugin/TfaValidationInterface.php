@@ -5,7 +5,7 @@
  * Contains \Drupal\tfa\TfaValidationInterface.
  */
 
-namespace Drupal\tfa;
+namespace Drupal\tfa\Plugin;
 
 /**
  * Interface TfaValidationInterface

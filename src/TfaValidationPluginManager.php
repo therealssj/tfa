@@ -6,13 +6,13 @@
 
 namespace Drupal\tfa;
 
-use Drupal\Core\Plugin\Discovery\AnnotatedClassDiscovery;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
-use Drupal\Core\Language\LanguageManager;
+use Drupal\Core\Plugin\DefaultPluginManager;
+use Drupal\Core\Plugin\Discovery\AnnotatedClassDiscovery;
 
 
-class TfaValidationPluginManager extends \Drupal\Core\Plugin\DefaultPluginManager {
+class TfaValidationPluginManager extends DefaultPluginManager {
   /**
    * Constructs a new TfaValidation plugin manager.
    *
@@ -25,9 +25,13 @@ class TfaValidationPluginManager extends \Drupal\Core\Plugin\DefaultPluginManage
    *   The module handler.
    */
   public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler) {
-    parent::__construct('Plugin/TfaValidation', $namespaces, $module_handler, 'Drupal\tfa\TfaValidationInterface', 'Drupal\tfa\Annotation\TfaValidation');
-    $this->alterInfo('tfa_validation_info');
+    parent::__construct('Plugin/TfaValidation', $namespaces, $module_handler, 'Drupal\tfa\Plugin\TfaValidationInterface', 'Drupal\tfa\Annotation\TfaValidation');
+    $this->alterInfo('tfa_validation');
     $this->setCacheBackend($cache_backend, 'tfa_validation');
+
+    // This is the essential line you have to use in your manager.
+//    $this->discovery = new AnnotatedClassDiscovery('Plugin/TfaValidation', $namespaces, 'Drupal\tfa\Annotation\TfaValidation');
+//    dpm($this);
   }
 
 }
