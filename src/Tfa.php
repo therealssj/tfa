@@ -8,6 +8,8 @@
 namespace Drupal\tfa;
 
 use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Core\Plugin\Discovery\HookDiscovery;
+use Drupal\tfa\Plugin\TfaBasePlugin;
 
 /**
  * Class Tfa

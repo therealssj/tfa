@@ -10,6 +10,7 @@ namespace Drupal\tfa\Form;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Core\StringTranslation\TranslationWrapper;
 
 class SettingsForm extends ConfigFormBase {
 
@@ -26,26 +27,19 @@ class SettingsForm extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config('tfa.settings');
     $form = array();
-    $plugins = $send_plugins = $validate_plugins = $login_plugins = array();
 
     //TODO - Wondering if all modules extend TfaBasePlugin
-
-
     //Get Login Plugins
-    $plugin_manager = \Drupal::service('plugin.manager.tfa.login');
-    $login_plugins = $plugin_manager->getDefinitions();
+    $login_plugins = \Drupal::service('plugin.manager.tfa.login')->getDefinitions();
 
     //Get Send Plugins
-    $plugin_manager = \Drupal::service('plugin.manager.tfa.send');
-    $send_plugins = $plugin_manager->getDefinitions();
+    $send_plugins = \Drupal::service('plugin.manager.tfa.send')->getDefinitions();
 
     //Get Validation Plugins
-    $plugin_manager = \Drupal::service('plugin.manager.tfa.validation');
-    $validate_plugins = $plugin_manager->getDefinitions();
+    $validate_plugins = \Drupal::service('plugin.manager.tfa.validation')->getDefinitions();
 
     //Get Setup Plugins
-    $plugin_manager = \Drupal::service('plugin.manager.tfa.setup');
-    $setup_plugins = $plugin_manager->getDefinitions();
+    $setup_plugins = \Drupal::service('plugin.manager.tfa.setup')->getDefinitions();
 
 
     // Check if mcrypt plugin is available.
@@ -64,7 +58,7 @@ class SettingsForm extends ConfigFormBase {
     if (empty($validate_plugins)) {
       //drupal_set_message(t('No plugins available for validation. See <a href="!link">the TFA help documentation</a> for setup.', array('!link' => \Drupal\Core\Url::fromRoute('help.page'))), 'error');
       drupal_set_message(t('No plugins available for validation. See the TFA help documentation for setup.'), 'error');
-      return parent::buildForm($form, $form_state);;
+      return parent::buildForm($form, $form_state);
     }
 
     // Option to enable entire process or not.
@@ -114,7 +108,7 @@ class SettingsForm extends ConfigFormBase {
       //render table
       foreach ($weights as $id => $weight) {
         $validate_plugin = $validate_plugins[$id];
-        $title = (string) $validate_plugin['title'];
+        $title = $validate_plugin['label']->render();
         // TableDrag: Mark the table row as draggable.
         $form['validate_plugins'][$id]['#attributes']['class'][] = 'draggable';
         // TableDrag: Sort the table row according to its existing/configured weight.
@@ -128,7 +122,7 @@ class SettingsForm extends ConfigFormBase {
         );
 
         $form['validate_plugins'][$id]['title'] = array(
-          '#markup' => SafeMarkup::checkPlain($title),
+          '#markup' => $title . ' (' . $validate_plugin['provider'] . ')',
         );
 
         // TableDrag: Weight column element.
