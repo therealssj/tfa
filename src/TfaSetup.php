@@ -1,5 +1,11 @@
 <?php
 
+namespace Drupal\tfa;
+
+use Drupal\Core\Form\FormStateInterface;
+require_once('modules/tfa_basic/src/Plugin/Tfa/tfa_totp.inc');    // @todo: BAD developer!
+
+
 /**
  * Class TfaSetup
  */
@@ -13,7 +19,7 @@ class TfaSetup {
   /**
    * TFA Setup constructor.
    *
-   * @param array $plugins
+   * @param TfaSetup $plugin
    *   Plugins to instansiate.
    *
    *   Must include key:
@@ -30,13 +36,10 @@ class TfaSetup {
    *       Account uid of user in TFA process.
    *
    */
-  public function __construct(array $plugins, array $context) {
-    if (empty($plugins['setup'])) {
-      // @todo throw exception?
-    }
-    $this->setupPlugin = new $plugins['setup']($context);
+  public function __construct(TfaSetup $plugin, array $context) {
+    $this->setupPlugin = $plugin;
     $this->context = $context;
-    $this->context['plugins'] = $plugins;
+//    $this->context['plugins'] = $plugins;
   }
 
   /**
@@ -56,7 +59,7 @@ class TfaSetup {
    * @param array $form_state
    * @return array
    */
-  public function getForm(array $form, array &$form_state) {
+  public function getForm(array $form, FormStateInterface &$form_state) {
     return $this->setupPlugin->getSetupForm($form, $form_state);
   }
 
@@ -67,7 +70,7 @@ class TfaSetup {
    * @param array $form_state
    * @return bool
    */
-  public function validateForm(array $form, array &$form_state) {
+  public function validateForm(array $form, FormStateInterface &$form_state) {
     return $this->setupPlugin->validateSetupForm($form, $form_state);
   }
 
@@ -86,7 +89,7 @@ class TfaSetup {
    * @param array $form_state
    * @return bool
    */
-  public function submitForm(array $form, array &$form_state) {
+  public function submitForm(array $form, FormStateInterface &$form_state) {
     return $this->setupPlugin->submitSetupForm($form, $form_state);
   }
 

@@ -3,6 +3,7 @@
 namespace Drupal\tfa\Plugin;
 
 use Drupal\Component\Plugin\PluginBase;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Base plugin class.
@@ -60,7 +61,7 @@ abstract class TfaBasePlugin extends PluginBase {
    *       Plugin-specific context for use during TfaSetup.
    *
    */
-  public function __construct(array $context = array()) {
+  public function __construct(array $context) {
     $this->context = $context;
     // Default code length is 6.
     $this->codeLength = 6;
@@ -89,11 +90,11 @@ abstract class TfaBasePlugin extends PluginBase {
    * Submit form.
    *
    * @param array $form
-   * @param array $form_state
+   * @param FormStateInterface $form_state
    * @return bool Whether plugin form handling is complete.
    *   Plugins should return FALSE to invoke multi-step.
    */
-  public function submitForm(array $form, array &$form_state) {
+  public function submitForm(array $form, FormStateInterface &$form_state) {
     return $this->isValid;
   }
 

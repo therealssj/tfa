@@ -5,7 +5,9 @@
  * Contains \Drupal\tfa\TfaSetupInterface.
  */
 
-namespace Drupal\tfa;
+namespace Drupal\tfa\Plugin;
+
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Interface TfaSetupInterface
@@ -18,21 +20,21 @@ interface TfaSetupInterface {
 
   /**
    * @param array $form
-   * @param array $form_state
+   * @param FormStateInterface $form_state
    */
-  public function getSetupForm(array $form, array &$form_state);
+  public function getSetupForm(array $form, FormStateInterface &$form_state);
 
   /**
    * @param array $form
-   * @param array $form_state
+   * @param FormStateInterface $form_state
    */
-  public function validateSetupForm(array $form, array &$form_state);
+  public function validateSetupForm(array $form, FormStateInterface &$form_state);
 
   /**
    * @param array $form
-   * @param array $form_state
+   * @param FormStateInterface $form_state
    * @return bool
    */
-  public function submitSetupForm(array $form, array &$form_state);
+  public function submitSetupForm(array $form, FormStateInterface &$form_state);
 
 }
