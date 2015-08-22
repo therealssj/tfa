@@ -6,6 +6,7 @@
  */
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\tfa\Tfa;
+use Drupal\user\Entity\User;
 
 /**
  * Implements hook_help().
@@ -208,14 +209,14 @@ function _tfa_get_process($account) {
 /**
  * Context for account TFA process.
  *
- * @param $account Drupal\user\Entity\User account
+ * @param User $account
  * @return array
  * @see _tfa_start_context() for format
  */
-function _tfa_get_context(Drupal\user\Entity\User $account) {
+function _tfa_get_context(User $account) {
   $context = array();
-  if (isset($_SESSION['tfa'][$account->id])) {
-    $context = $_SESSION['tfa'][$account->id];
+  if (isset($_SESSION['tfa'][$account->id()])) {
+    $context = $_SESSION['tfa'][$account->id()];
   }
   // Allow other modules to modify TFA context.
   \Drupal::moduleHandler()->alter('tfa_context', $context);
@@ -225,7 +226,7 @@ function _tfa_get_context(Drupal\user\Entity\User $account) {
 /**
  * Start context for TFA.
  *
- * @param $account User account
+ * @param User $account
  * @return array
  *   array(
  *     'uid' => 9,
@@ -237,7 +238,7 @@ function _tfa_get_context(Drupal\user\Entity\User $account) {
  *     ),
  */
 function _tfa_start_context($account) {
-  $context = array('uid' => $account->id, 'plugins' => array());
+  $context = array('uid' => $account->id(), 'plugins' => array());
   $plugins = array();
   $fallback_plugins = array();
 
@@ -281,8 +282,8 @@ function _tfa_start_context($account) {
  * @see tfa_start_context() for context format
  */
 function _tfa_set_context($account, $context) {
-  $_SESSION['tfa'][$account->id] = $context;
-  $_SESSION['tfa'][$account->id]['uid'] = $account->id;
+  $_SESSION['tfa'][$account->id()] = $context;
+  $_SESSION['tfa'][$account->id()]['uid'] = $account->id();
   // Clear existing static TFA process.
   drupal_static_reset('tfa_get_process');
 }
