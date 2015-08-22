@@ -69,7 +69,6 @@ class SettingsForm extends ConfigFormBase {
       '#description' => t('Enable TFA for account authentication.'),
     );
 
-
     if (count($validate_plugins)) {
 
       //order plugins by weight
@@ -105,8 +104,12 @@ class SettingsForm extends ConfigFormBase {
         }
       }
 
-      //render table
+      // Render table.
       foreach ($weights as $id => $weight) {
+        // @todo: Plugin removed but stored in $weights - whops.
+        if (!isset($validate_plugins[$id])) {
+          continue;
+        }
         $validate_plugin = $validate_plugins[$id];
         $title = $validate_plugin['label']->render();
         // TableDrag: Mark the table row as draggable.
@@ -147,12 +150,12 @@ class SettingsForm extends ConfigFormBase {
 
 
     // Enable login plugins.
-    if (count($login_plugins) >= 1) {
+    if (count($login_plugins)) {
       $login_form_array = array();
 
       foreach ($login_plugins as $login_plugin) {
         $id = $login_plugin['id'];
-        $title = $login_plugin['title'];
+        $title = $login_plugin['label']->render();
         $login_form_array[$id] = (string) $title;
       }
 
@@ -166,12 +169,12 @@ class SettingsForm extends ConfigFormBase {
     }
 
     // Enable send plugins.
-    if (count($send_plugins) >= 1) {
+    if (count($send_plugins)) {
       $send_form_array = array();
 
       foreach ($send_plugins as $send_plugin) {
         $id = $send_plugin['id'];
-        $title = $send_plugin['title'];
+        $title = $send_plugin['label']->render();
         $send_form_array[$id] = (string) $title;
       }
 
@@ -191,7 +194,7 @@ class SettingsForm extends ConfigFormBase {
 
       foreach ($setup_plugins as $setup_plugin) {
         $id = $setup_plugin['id'];
-        $title = $setup_plugin['title'];
+        $title = $setup_plugin['label']->render();
         $setup_form_array[$id] = $title;
       }
 

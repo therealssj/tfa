@@ -5,7 +5,7 @@
  * Contains \Drupal\tfa\TfaSendInterface.
  */
 
-namespace Drupal\tfa;
+namespace Drupal\tfa\Plugin;
 
 /**
  * Interface TfaSendInterface

@@ -5,7 +5,7 @@
  * Contains \Drupal\tfa\TfaLoginInterface.
  */
 
-namespace Drupal\tfa;
+namespace Drupal\tfa\Plugin;
 
 /**
  * Interface TfaLoginInterface

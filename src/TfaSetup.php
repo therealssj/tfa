@@ -3,8 +3,6 @@
 namespace Drupal\tfa;
 
 use Drupal\Core\Form\FormStateInterface;
-require_once('modules/tfa_basic/src/Plugin/Tfa/tfa_totp.inc');    // @todo: BAD developer!
-
 
 /**
  * Class TfaSetup
