@@ -34,7 +34,7 @@ class TfaSetup {
    *       Account uid of user in TFA process.
    *
    */
-  public function __construct(TfaSetup $plugin, array $context) {
+  public function __construct($plugin, array $context) {
     $this->setupPlugin = $plugin;
     $this->context = $context;
 //    $this->context['plugins'] = $plugins;
