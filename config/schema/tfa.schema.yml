@@ -1,0 +1,22 @@
+tfa.settings:
+  type: mapping
+  label: 'TFA settings'
+  mapping:
+    enabled:
+      type: integer
+      label: 'TFA enabled'
+    setup_plugins:
+      type: sequence
+      label: 'TFA plugins'
+    send_plugins:
+      type: sequence
+      label: 'Send plugins'
+    login_plugins:
+      type: sequence
+      label: 'Login plugins'
+    validate_plugins:
+      type: sequence
+      label: 'Validation plugins'
+    validate_weights:
+      type: sequence
+      label: 'Validation plugins weights'

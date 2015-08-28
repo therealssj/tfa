@@ -3,4 +3,4 @@ type: module
 description: Pluggable provider of second factor authentication for Drupal
 core: 8.x
 package: Other
-configure: tfa.settings_form
+configure: tfa.settings
