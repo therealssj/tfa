@@ -281,7 +281,7 @@ function _tfa_start_context($account) {
     }
   }
   // Allow other modules to modify TFA context.
-  \Drupal::moduleHandler()->alter('tfa_context', $  context);
+  \Drupal::moduleHandler()->alter('tfa_context', $context);
   _tfa_set_context($account, $context);
   return $context;
 }
