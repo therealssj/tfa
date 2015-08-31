@@ -7,10 +7,11 @@
 
 namespace Drupal\tfa\Form;
 
-use Drupal\Core\Form\ConfigFormBase;
+use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Session\AccountInterface;
 
-class EntryForm extends ConfigFormBase {
+class EntryForm extends FormBase {
 
   /**
    * {@inheritdoc}
@@ -22,52 +23,77 @@ class EntryForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state) {
-    $account = $this->userStorage->load($form_state->get('uid'));
+  public function buildForm(array $form, FormStateInterface $form_state, AccountInterface $user = null) {
+    $tfa = _tfa_get_process($user);
 
-    //$tfa = tfa_get_process($account);
 
-    /*
     // Check flood tables.
-    if (_tfa_hit_flood($tfa)) {
-      \Drupal::moduleHandler()->invokeAll('tfa_flood_hit', [$tfa->getContext()]);
-      return drupal_access_denied();
-    }
-    */
+    //@TODO Reimplement Flood Controls.
+//    if (_tfa_hit_flood($tfa)) {
+//      \Drupal::moduleHandler()->invokeAll('tfa_flood_hit', [$tfa->getContext()]);
+//      return drupal_access_denied();
+//    }
+//
 
     // Get TFA plugins form.
-    //$form = $tfa->getForm($form, $form_state);
-    //if ($tfa->hasFallback()) {
-    $form['actions']['fallback'] = array(
-      '#type' => 'submit',
-      '#value' => t("Can't access your account?"),
-      '#submit' => array('tfa_form_submit'),
-      '#limit_validation_errors' => array(),
-      '#weight' => 20,
-    );
-    //}
+    $form = $tfa->getForm($form, $form_state);
+
+    //If there is a fallback method, set it.
+    if ($tfa->hasFallback()) {
+      $form['actions']['fallback'] = array(
+        '#type' => 'submit',
+        '#value' => t("Can't access your account?"),
+        '#submit' => array('tfa_form_submit'),
+        '#limit_validation_errors' => array(),
+        '#weight' => 20,
+      );
+    }
 
     // Set account element.
     $form['account'] = array(
       '#type' => 'value',
-      '#value' => $account,
+      '#value' => $user,
     );
 
-    return parent::buildForm($form, $form_state);
+    return $form;
   }
 
   /**
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    return parent::validateForm($form, $form_state);
+    $user = $form_state->getValue('account');
+    $tfa = _tfa_get_process($user);
+    $tfa->validateForm($form, $form_state);
   }
 
   /**
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    parent::submitForm($form, $form_state);
+    $user = $form_state->getValue('account');
+    $tfa = _tfa_get_process($user);
+    if(!$tfa->submitForm($form, $form_state)) {
+      // If fallback was triggered TFA process has been reset to new validate
+      // plugin so run begin and store new context.
+
+      $fallback = $form_state->getValue('fallback');
+      if (isset($fallback) && $form_state->getValue('op') === $fallback) {
+        $tfa->begin();
+      }
+      $context = $tfa->getContext();
+      tfa_set_context($user, $context);
+      $form_state['rebuild'] = TRUE;
+    }
+    else {
+      // TFA process is complete so finalize and authenticate user.
+      $context = _tfa_get_context($user);
+      $tfa->finalize();
+      _tfa_login($user);
+      // Set redirect based on query parameters, existing $form_state or context.
+      //$form_state['redirect'] = _tfa_form_get_destination($context, $form_state, $user);
+      $form_state->setRedirect('<front>');
+    }
   }
 
   /**

@@ -1,16 +1,14 @@
 tfa.entry:
-  path: 'tfa/{account}'
+  path: 'tfa/{user}/{hash}'
   defaults:
     _form: '\Drupal\tfa\Form\EntryForm'
     _title: 'Two-Factor Authentication'
   requirements:
-    _entity_access: tfa_entry_access
-    #'access callback' => 'tfa_entry_access',
-    #'access arguments' => array(2, 3),
+    _permission: 'access content'
   options:
     _maintenance_access: TRUE
 tfa.settings:
-  path: 'admin/config/security/tfa/settings'
+  path: 'admin/config/security/tfa'
   defaults:
     _form: '\Drupal\tfa\Form\SettingsForm'
     _title: 'TFA Settings'

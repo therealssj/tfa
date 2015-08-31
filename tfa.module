@@ -7,6 +7,7 @@
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\tfa\Tfa;
 use Drupal\user\Entity\User;
+use Drupal\Component\Utility\Crypt;
 
 /**
  * Implements hook_help().
@@ -23,14 +24,7 @@ function tfa_help($route_name, RouteMatchInterface $route_match) {
   }
 }
 
-/**
- * Implements hook_theme().
- */
-function tfa_theme() {
-  $theme = [];
 
-  return $theme;
-}
 
 /**
  * Validate access to TFA code entry form.
@@ -133,6 +127,7 @@ function tfa_login_form_redirect($form, &$form_state) {
 function tfa_login_submit($form, &$form_state) {
   // Similar to tfa_user_login() but not required to force user logout.
 
+
   if ($uid = $form_state->get('uid')) {
     $account = \Drupal::entityManager()->getStorage('user')->load($uid);
   }
@@ -145,16 +140,17 @@ function tfa_login_submit($form, &$form_state) {
       drupal_set_message(t('Login disallowed. You are required to setup two-factor authentication. Please contact a site administrator.'), 'error');
       $form_state['redirect'] = 'user';
     }
-    elseif (!tfa_login_complete($account) && $tfa->ready() && !tfa_login_allowed($account)) {
+    //elseif (!tfa_login_complete($account) && $tfa->ready() && !tfa_login_allowed($account)) {
+    elseif ( $tfa->ready() && !$tfa->loginAllowed($account)) {
 
       // Restart flood levels, session context, and TFA process.
-      flood_clear_event('tfa_validate');
-      flood_register_event('tfa_begin');
-      $context = tfa_start_context($account);
-      $tfa = tfa_get_process($account);
+      //flood_clear_event('tfa_validate');
+      //flood_register_event('tfa_begin');
+//      $context = tfa_start_context($account);
+//      $tfa = _tfa_get_process($account);
 
-      $query = drupal_get_query_parameters();
-      if (!empty($form_state['redirect'])) {
+     // $query = drupal_get_query_parameters();
+      if (!empty($form_state->redirect)) {
         // If there's an existing redirect set it in TFA context and
         // tfa_form_submit() will extract and set once process is complete.
         $context['redirect'] = $form_state['redirect'];
@@ -164,12 +160,15 @@ function tfa_login_submit($form, &$form_state) {
       // Begin TFA and set process context.
       $tfa->begin();
       $context = $tfa->getContext();
-      tfa_set_context($account, $context);
+      _tfa_set_context($account, $context);
 
       $login_hash = tfa_login_hash($account);
-      $form_state['tfa_redirect'] = array(
-        'system/tfa/' . $account->uid . '/' . $login_hash,
-        array('query' => $query),
+      $form_state->setRedirect(
+        'tfa.entry',
+        ['user' => $account->id(),
+        'hash' => $login_hash]
+        //'tfa/' . $account->id() . '/' . $login_hash
+        //array('query' => $query),
       );
     }
     else {
@@ -181,7 +180,10 @@ function tfa_login_submit($form, &$form_state) {
     drupal_set_message(t('Two-factor authentication is enabled but misconfigured. Please contact a site administrator.'), 'error');
     $form_state->setRedirect('user.page');
   }
+
 }
+
+
 
 /**
  * Get Tfa object in the account's current context.
@@ -193,7 +195,7 @@ function _tfa_get_process($account) {
   $tfa = &drupal_static(__FUNCTION__);
   if (!isset($tfa)) {
     $context = _tfa_get_context($account);
-    if (empty($context)) {
+    if (empty($context['plugins'])) {
       $context = _tfa_start_context($account);
     }
     try {
@@ -215,9 +217,9 @@ function _tfa_get_process($account) {
  */
 function _tfa_get_context(User $account) {
   $context = array();
-  if (isset($_SESSION['tfa'][$account->id()])) {
-    $context = $_SESSION['tfa'][$account->id()];
-  }
+//  if (isset($_SESSION['tfa'][$account->id()])) {
+//    $context = $_SESSION['tfa'][$account->id()];
+//  }
   // Allow other modules to modify TFA context.
   \Drupal::moduleHandler()->alter('tfa_context', $context);
   return $context;
@@ -236,6 +238,10 @@ function _tfa_get_context(User $account) {
  *       'fallback' => array('TfaMyRecoveryCodePlugin'),
  *       'setup' => 'TfaMySetupPlugin',
  *     ),
+ *
+ *
+ * @TODO TBD on purpose of $api defines the class name of the plugins, but we need to load
+ * them by the plugin name. Is it actually doing us any good?
  */
 function _tfa_start_context($account) {
   $context = array('uid' => $account->id(), 'plugins' => array());
@@ -243,6 +249,7 @@ function _tfa_start_context($account) {
   $fallback_plugins = array();
 
   $api = \Drupal::moduleHandler()->invokeAll('tfa_api', []);
+  $settings = \Drupal::config('tfa.settings');
   if (\Drupal::config('tfa.settings')->get('login_plugins')) {
     $plugins = \Drupal::config('tfa.settings')->get('login_plugins');
   }
@@ -252,16 +259,21 @@ function _tfa_start_context($account) {
   }
 
   // Add login plugins.
+  //@TODO This won't work the way it is. Need to refactor like we did for validate plguins.
   foreach ($plugins as $key) {
     if (array_key_exists($key, $api)) {
       $context['plugins']['login'][] = $api[$key]['class'];
     }
   }
   // Add validate.
-  $validate = \Drupal::config('tfa.settings')->get('validate_plugin');
-  if (!empty($validate) && array_key_exists($validate, $api)) {
-    $context['plugins']['validate'] = $api[$validate]['class'];
+  //@TODO Figure out why D8 decided to allow multiple validate plugins.
+  $validate = \Drupal::config('tfa.settings')->get('validate_plugins');
+  foreach($validate as $key => $value){
+    if (!empty($validate) && array_key_exists($key, $api)) {
+      $context['plugins']['validate'] = $key;
+    }
   }
+
   // Add fallback plugins.
   foreach ($fallback_plugins as $key) {
     if (array_key_exists($key, $api)) {
@@ -269,7 +281,7 @@ function _tfa_start_context($account) {
     }
   }
   // Allow other modules to modify TFA context.
-  \Drupal::moduleHandler()->alter('tfa_context', $context);
+  \Drupal::moduleHandler()->alter('tfa_context', $  context);
   _tfa_set_context($account, $context);
   return $context;
 }
@@ -300,4 +312,63 @@ function _tfa_login_complete($account) {
     return TRUE;
   }
   return FALSE;
+}
+
+
+/**
+ * Generate account hash to access the TFA form.
+ *
+ * @param object $account User account.
+ * @return string Random hash.
+ */
+function tfa_login_hash($account) {
+  // Using account login will mean this hash will become invalid once user has
+  // authenticated via TFA.
+  $data = implode(':', array($account->getUsername() , $account->getPassword(), $account->getLastLoginTime()));
+  return Crypt::hashBase64($data);
+}
+
+
+
+/**
+ * Authenticate the user.
+ *
+ * Does basically the same thing that user_login_finalize does but with our own custom
+ * hooks.
+ *
+ * @param $account User account object.
+ */
+function _tfa_login($account) {
+  \Drupal::currentUser()->setAccount($account);
+
+  // Update the user table timestamp noting user has logged in.
+  $account->setLastLoginTime(REQUEST_TIME);
+  \Drupal::entityManager()
+    ->getStorage('user')
+    ->updateLastLoginTimestamp($account);
+  // Regenerate the session ID to prevent against session fixation attacks.
+  \Drupal::service('session')->migrate();
+  \Drupal::service('session')->set('uid', $account->id());
+
+  //watchdog('tfa', 'Session opened for %name.', array('%name' => $user->getUsername()));
+  // Clear existing context and set master authenticated context.
+  _tfa_clear_context($account);
+  $_SESSION['tfa'][$account->id()]['login'] = TRUE;
+
+  // Truncate flood for user.
+  //flood_clear_event('tfa_begin');
+  //$identifier = variable_get('user_failed_login_identifier_uid_only', FALSE) ? $account->uid : $account->uid . '-' . ip_address();
+  //flood_clear_event('tfa_user', $identifier);
+  //$edit = array();
+  //user_module_invoke('login', $edit, $user);
+}
+
+/**
+ * Remove context for account.
+ *
+ * @param object $account
+ *   User account object
+ */
+function _tfa_clear_context($account) {
+  unset($_SESSION['tfa'][$account->uid]);
 }

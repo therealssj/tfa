@@ -10,6 +10,8 @@ namespace Drupal\tfa;
 use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Plugin\Discovery\HookDiscovery;
 use Drupal\tfa\Plugin\TfaBasePlugin;
+use Drupal\tfa\TfaValidationPluginManager;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Class Tfa
@@ -76,7 +78,7 @@ class Tfa {
    */
   public function __construct(array $plugins, array $context) {
 
-    new HookDiscovery('tfa_api');
+    //new HookDiscovery('Drupal\Core\Extension\ModuleHandlerInterface','tfa_api');
 
     if (empty($plugins)) {
       throw new \RuntimeException(
@@ -89,7 +91,11 @@ class Tfa {
           array('@function' => 'Tfa::__construct')));
     }
 
-    $this->validatePlugin = new $plugins['validate']($context);
+
+    //How do we dynamically load the validate plugin class?
+    $validation_service = \Drupal::service('plugin.manager.tfa.validation');
+    $validate_plugin = $validation_service->getDefinition($plugins['validate']);
+    $this->validatePlugin = new $validate_plugin['class']($context);
     if (!empty($plugins['login'])) {
       foreach ($plugins['login'] as $class) {
         $this->loginPlugins[] = new $class($context);
@@ -151,10 +157,10 @@ class Tfa {
    * Get TFA process form from plugin.
    *
    * @param array $form
-   * @param array $form_state
+   * @param FormStateInterface $form_state
    * @return array Form API array.
    */
-  public function getForm(array $form, array &$form_state) {
+  public function getForm(array $form, FormStateInterface $form_state) {
     $form = $this->validatePlugin->getForm($form, $form_state);
     // Allow login plugins to modify form.
     if (!empty($this->loginPlugins)) {
@@ -184,10 +190,10 @@ class Tfa {
    * Validate form.
    *
    * @param array $form
-   * @param array $form_state
+   * @param FormStateInterface $form_state
    * @return bool
    */
-  public function validateForm(array $form, array &$form_state) {
+  public function validateForm(array $form, FormStateInterface $form_state) {
     return $this->validatePlugin->validateForm($form, $form_state);
   }
 
@@ -203,14 +209,18 @@ class Tfa {
   /**
    * Invoke submitForm() on plugins.
    *
+   * - Check Fallback to see if it was triggered.
+   * - If no Fallback was called, call current plugin's submitForm().
+   *
    * @param array $form
-   * @param array $form_state
+   * @param FormStateInterface $form_state
    * @return bool Whether the validate plugin is complete.
    *   FALSE will cause tfa_form_submit() to rebuild the form for multi-step.
    */
-  public function submitForm(array $form, array &$form_state) {
+  public function submitForm(array $form, FormStateInterface $form_state) {
     // Handle fallback if set.
-    if ($this->fallback && isset($form_state['values']['fallback']) && $form_state['values']['op'] === $form_state['values']['fallback']) {
+    $fallback = $form_state->getValue('fallback');
+    if ($this->fallback && isset($fallback) && $form_state->getValue('op') === $fallback) {
       // Change context to next fallback and reset validatePlugin.
       $this->context['plugins']['validate'] = array_shift($this->context['plugins']['fallback']);
       $class = $this->context['plugins']['validate'];
