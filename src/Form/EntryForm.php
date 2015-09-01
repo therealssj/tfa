@@ -24,7 +24,8 @@ class EntryForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, AccountInterface $user = null) {
-    $tfa = _tfa_get_process($user);
+    $tfaManager = \Drupal::service('tfa.manager');
+    $tfa = $tfaManager->getProcess($user);
 
 
     // Check flood tables.
@@ -63,7 +64,8 @@ class EntryForm extends FormBase {
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     $user = $form_state->getValue('account');
-    $tfa = _tfa_get_process($user);
+    $tfaManager = \Drupal::service('tfa.manager');
+    $tfa = $tfaManager->getProcess($user);
     $tfa->validateForm($form, $form_state);
   }
 
@@ -72,7 +74,8 @@ class EntryForm extends FormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $user = $form_state->getValue('account');
-    $tfa = _tfa_get_process($user);
+    $tfaManager = \Drupal::service('tfa.manager');
+    $tfa = $tfaManager->getProcess($user);
     if(!$tfa->submitForm($form, $form_state)) {
       // If fallback was triggered TFA process has been reset to new validate
       // plugin so run begin and store new context.
@@ -82,14 +85,14 @@ class EntryForm extends FormBase {
         $tfa->begin();
       }
       $context = $tfa->getContext();
-      tfa_set_context($user, $context);
+      $tfaManager->setContext($user, $context);
       $form_state['rebuild'] = TRUE;
     }
     else {
       // TFA process is complete so finalize and authenticate user.
-      $context = _tfa_get_context($user);
+      $context = $tfaManager->getContext($user);
       $tfa->finalize();
-      _tfa_login($user);
+      $tfaManager->login($user);
       // Set redirect based on query parameters, existing $form_state or context.
       //$form_state['redirect'] = _tfa_form_get_destination($context, $form_state, $user);
       $form_state->setRedirect('<front>');
