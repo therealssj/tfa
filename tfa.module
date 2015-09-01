@@ -22,18 +22,10 @@ function tfa_help($route_name, RouteMatchInterface $route_match) {
 }
 
 
-
 /**
- * Validate access to TFA code entry form.
+ * Implements hook_user_login()
+ * @param $account
  */
-function tfa_entry_access($account, $url_hash) {
-  // Generate a hash for this account.
-  //$hash = tfa_login_hash($account);
-  //$context = tfa_get_context($account);
-  //return $hash === $url_hash && !empty($context) && $context['uid'] === $account->uid;
-  return TRUE;
-}
-
 function tfa_user_login($account) {
   if (!\Drupal::config('tfa.settings')->get('enabled')) {
     drupal_set_message(t('TFA is not enabled.'));
@@ -139,8 +131,7 @@ function tfa_login_submit($form, &$form_state) {
       drupal_set_message(t('Login disallowed. You are required to setup two-factor authentication. Please contact a site administrator.'), 'error');
       $form_state['redirect'] = 'user';
     }
-    //elseif (!tfa_login_complete($account) && $tfa->ready() && !tfa_login_allowed($account)) {
-    elseif ( $tfa->ready() && !$tfa->loginAllowed($account)) {
+    elseif (!$tfaManager->loginComplete($account) && $tfa->ready() && !$tfa->loginAllowed($account)) {
 
       // Restart flood levels, session context, and TFA process.
       //flood_clear_event('tfa_validate');

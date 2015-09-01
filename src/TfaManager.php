@@ -211,4 +211,15 @@ class TfaManager {
   }
 
 
+  /**
+   * Validate access to TFA code entry form.
+   */
+  public function entryAccess($account, $url_hash) {
+    // Generate a hash for this account.
+    //$hash = tfa_login_hash($account);
+    //$context = tfa_get_context($account);
+    //return $hash === $url_hash && !empty($context) && $context['uid'] === $account->uid;
+    return TRUE;
+  }
+
 }
