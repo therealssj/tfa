@@ -206,7 +206,7 @@ class TfaManager {
           );
         }
         else {
-          $requestStack->getCurrentRequest()->query->set('destination', $this->getRequest()->request->get('destination'));
+          $requestStack->getCurrentRequest()->query->set('destination',  $requestStack->request->get('destination'));
         }
 
         user_login_finalize($account);
