@@ -10,6 +10,7 @@ namespace Drupal\tfa;
 use Drupal\tfa\Tfa;
 use Drupal\user\Entity\User;
 use Drupal\Component\Utility\Crypt;
+use Drupal\user\UserStorageInterface;
 
 
 class TfaManager {
@@ -135,6 +136,90 @@ class TfaManager {
     // Clear existing static TFA process.
     drupal_static_reset('tfa_get_process');
   }
+
+
+
+  /**
+   * Login submit handler to determine if TFA process is applicable.
+   *
+   * @param array $form
+   * @param array $form_state
+   */
+  public function loginSubmit($form, &$form_state) {
+    // Similar to tfa_user_login() but not required to force user logout.
+    $tfaManager = \Drupal::service('tfa.manager');
+
+    if ($uid = $form_state->get('uid')) {
+      $account = \Drupal::entityManager()->getStorage('user')->load($uid);
+    }
+    else {
+      $account = user_load_by_name($form_state->get('name'));
+    }
+
+    if ($tfa = $tfaManager->getProcess($account)) {
+      if ($account->hasPermission('require tfa') && !$tfaManager->loginComplete($account) && !$tfa->ready()) {
+        drupal_set_message(t('Login disallowed. You are required to setup two-factor authentication. Please contact a site administrator.'), 'error');
+        $form_state['redirect'] = 'user';
+      }
+      elseif (!$tfaManager->loginComplete($account) && $tfa->ready() && !$tfa->loginAllowed($account)) {
+
+        // Restart flood levels, session context, and TFA process.
+        //flood_clear_event('tfa_validate');
+        //flood_register_event('tfa_begin');
+//      $context = tfa_start_context($account);
+//      $tfa = _tfa_get_process($account);
+
+        // $query = drupal_get_query_parameters();
+        if (!empty($form_state->redirect)) {
+          // If there's an existing redirect set it in TFA context and
+          // tfa_form_submit() will extract and set once process is complete.
+          $context['redirect'] = $form_state['redirect'];
+        }
+        unset($_GET['destination']);
+
+        // Begin TFA and set process context.
+        $tfa->begin();
+        $context = $tfa->getContext();
+        $tfaManager->setContext($account, $context);
+
+        $login_hash = $tfaManager->getLoginHash($account);
+        $form_state->setRedirect(
+          'tfa.entry',
+          ['user' => $account->id(),
+            'hash' => $login_hash]
+        //'tfa/' . $account->id() . '/' . $login_hash
+        //array('query' => $query),
+        );
+      }
+      else {
+        //@TODO Need to figure out what the proper way of doing this is.
+        // Currently duplicates UserLoginForm::submitForm() since user_submit_login
+        // doesn't exist anymore.
+        // We can't call the UserLoginForm::submitForm() method statically becuause
+        // it is not a static method.
+        $requestStack = \Drupal::service('request_stack');
+        // A destination was set, probably on an exception controller,
+        if (!$requestStack->getCurrentRequest()->request->has('destination')) {
+          $form_state->setRedirect(
+            'entity.user.canonical',
+            array('user' => $account->id())
+          );
+        }
+        else {
+          $requestStack->getCurrentRequest()->query->set('destination', $this->getRequest()->request->get('destination'));
+        }
+
+        user_login_finalize($account);
+
+      }
+    }
+    else {
+      drupal_set_message(t('Two-factor authentication is enabled but misconfigured. Please contact a site administrator.'), 'error');
+      $form_state->setRedirect('user.page');
+    }
+
+  }
+
 
   /**
    * Check if TFA process has completed so authentication should not be stopped.

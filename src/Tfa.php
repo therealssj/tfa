@@ -91,7 +91,6 @@ class Tfa {
           array('@function' => 'Tfa::__construct')));
     }
 
-
     //How do we dynamically load the validate plugin class?
     $validation_service = \Drupal::service('plugin.manager.tfa.validation');
     $validate_plugin = $validation_service->getDefinition($plugins['validate']);
