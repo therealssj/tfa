@@ -69,6 +69,7 @@ class SettingsForm extends ConfigFormBase {
       '#description' => t('Enable TFA for account authentication.'),
     );
 
+    //@TODO Figure out why we allow multiple validation plugins?
     if (count($validate_plugins)) {
 
       //order plugins by weight

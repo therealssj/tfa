@@ -24,7 +24,7 @@ interface TfaValidationInterface {
    * @param FormStateInterface $form_state
    * @return array Form API array.
    */
-  public function getForm(array $form, FormStateInterface &$form_state);
+  public function getForm(array $form, FormStateInterface $form_state);
 
   /**
    * Validate form.
@@ -33,5 +33,5 @@ interface TfaValidationInterface {
    * @param FormStateInterface $form_state
    * @return bool Whether form passes validation or not
    */
-  public function validateForm(array $form, FormStateInterface &$form_state);
+  public function validateForm(array $form, FormStateInterface $form_state);
 }

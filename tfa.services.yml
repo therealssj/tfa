@@ -11,3 +11,5 @@ services:
   plugin.manager.tfa.setup:
     class: Drupal\tfa\TfaSetupPluginManager
     parent: default_plugin_manager
+  tfa.manager:
+    class: Drupal\tfa\TfaManager
