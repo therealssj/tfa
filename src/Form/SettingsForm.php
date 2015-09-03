@@ -7,12 +7,59 @@
 
 namespace Drupal\tfa\Form;
 
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Component\Utility\SafeMarkup;
-use Drupal\Core\StringTranslation\TranslationWrapper;
+use Drupal\tfa\TfaLoginPluginManager;
+use Drupal\tfa\TfaSendPluginManager;
+use Drupal\tfa\TfaSetupPluginManager;
+use Drupal\tfa\TfaValidationPluginManager;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class SettingsForm extends ConfigFormBase {
+
+
+  /**
+   * @var
+   */
+  protected $configFactory;
+
+  /**
+   * @var \Drupal\tfa\TfaLoginPluginManager
+   */
+  protected $tfaLogin;
+  /**
+   * @var \Drupal\tfa\TfaSendPluginManager
+   */
+  protected $tfaSend;
+  /**
+   * @var \Drupal\tfa\TfaValidationPluginManager
+   */
+  protected $tfaValidation;
+  /**
+   * @var \Drupal\tfa\TfaSetupPluginManager
+   */
+  protected $tfaSetup;
+
+  public function __construct(ConfigFactoryInterface $config_factory, TfaLoginPluginManager $tfa_login, TfaSendPluginManager $tfa_send, TfaValidationPluginManager $tfa_validation, TfaSetupPluginManager $tfa_setup) {
+    parent::__construct($config_factory);
+    $this->tfaLogin = $tfa_login;
+    $this->tfaSend = $tfa_send;
+    $this->tfaSetup = $tfa_setup;
+    $this->tfaValidation = $tfa_validation;
+  }
+
+
+  public static function create(ContainerInterface $container){
+    return new static(
+      $container->get('config.factory'),
+      $container->get('plugin.manager.tfa.login'),
+      $container->get('plugin.manager.tfa.send'),
+      $container->get('plugin.manager.tfa.validation'),
+      $container->get('plugin.manager.tfa.setup')
+    );
+  }
+
 
   /**
    * {@inheritdoc}
@@ -30,16 +77,16 @@ class SettingsForm extends ConfigFormBase {
 
     //TODO - Wondering if all modules extend TfaBasePlugin
     //Get Login Plugins
-    $login_plugins = \Drupal::service('plugin.manager.tfa.login')->getDefinitions();
+    $login_plugins = $this->tfaLogin->getDefinitions();
 
     //Get Send Plugins
-    $send_plugins = \Drupal::service('plugin.manager.tfa.send')->getDefinitions();
+    $send_plugins = $this->tfaSend->getDefinitions();
 
     //Get Validation Plugins
-    $validate_plugins = \Drupal::service('plugin.manager.tfa.validation')->getDefinitions();
+    $validate_plugins = $this->tfaValidation->getDefinitions();
 
     //Get Setup Plugins
-    $setup_plugins = \Drupal::service('plugin.manager.tfa.setup')->getDefinitions();
+    $setup_plugins = $this->tfaSetup->getDefinitions();
 
 
     // Check if mcrypt plugin is available.

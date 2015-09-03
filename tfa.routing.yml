@@ -16,3 +16,12 @@ tfa.settings:
     _admin_route: TRUE
   requirements:
     _permission: 'administer site configuration'
+tfa.login:
+  path: 'tfalogin'
+  defaults:
+    _form: '\Drupal\tfa\Form\TfaLoginForm'
+    _title: 'User Login'
+  requirements:
+    _user_is_logged_in: 'FALSE'
+  options:
+    _maintenance_access: TRUE

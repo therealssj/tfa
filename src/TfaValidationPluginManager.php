@@ -29,9 +29,6 @@ class TfaValidationPluginManager extends DefaultPluginManager {
     $this->alterInfo('tfa_validation');
     $this->setCacheBackend($cache_backend, 'tfa_validation');
 
-    // This is the essential line you have to use in your manager.
-    //$this->discovery = new AnnotatedClassDiscovery('Plugin/TfaValidation', $namespaces, 'Drupal\tfa\Annotation\TfaValidation');
-//    dpm($this);
   }
 
 }
