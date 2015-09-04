@@ -5,6 +5,7 @@
  * Contains tfa.module
  */
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Access\AccessResult;
 
 /**
  * Implements hook_help().
@@ -73,10 +74,36 @@ function tfa_user_login($account) {
   */
 }
 
+/**
+ * Implements hook_block_access()
+ *
+ * Remove access to the core user_login_block so we can replace with the TFA login block.
+ *
+ * @param \Drupal\block\Entity\Block $block
+ * @param $operation
+ * @param \Drupal\user\Entity\User $account
+ * @param $langcode
+ * @return \Drupal\Core\Access\AccessResult
+ */
+function tfa_block_access(\Drupal\block\Entity\Block $block, $operation, \Drupal\Core\Session\AccountInterface $account, $langcode){
+  if(\Drupal::config('tfa.settings')->get('enabled') && $block->getPluginId() === 'user_login_block'){
+    return AccessResult::forbidden();
+  }
+}
 
 
 
-
+/**
+ * Implements hook_block_alter().
+ *
+ * Removes the User Login Block if TFA authentication is enabled.
+ */
+function tfa_block_alter(&$definitions) {
+  $tfa_enabled = \Drupal::config('tfa.settings')->get('enabled');
+  if ($tfa_enabled) {
+    unset($definitions['user_login_block']);
+  }
+}
 
 
 

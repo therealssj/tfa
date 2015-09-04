@@ -1,6 +1,6 @@
 <?php
 /**
- * @file TfaLogin.php
+ * @file TfaLoginForm.php
  * Contains implementation of the TfaLoginForm class.
  */
 
