@@ -8,13 +8,14 @@
 namespace Drupal\tfa;
 
 use Drupal\Component\Utility\SafeMarkup;
-use Drupal\Core\Plugin\Discovery\HookDiscovery;
 use Drupal\tfa\Plugin\TfaBasePlugin;
-use Drupal\tfa\TfaValidationPluginManager;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Class Tfa
+ *
+ * Defines a TFA object.
+ *
  */
 class Tfa {
 
@@ -77,9 +78,6 @@ class Tfa {
    *
    */
   public function __construct(array $plugins, array $context) {
-
-    //new HookDiscovery('Drupal\Core\Extension\ModuleHandlerInterface','tfa_api');
-
     if (empty($plugins)) {
       throw new \RuntimeException(
         SafeMarkup::format('TFA must have at least 1 valid plugin',
@@ -87,19 +85,22 @@ class Tfa {
     }
     if (empty($plugins['validate'])) {
       throw new \RuntimeException(
-        SafeMarkup::format('TFA must have at least 1 valid plugin',
+        SafeMarkup::format('TFA must have at least 1 valid validation plugin',
           array('@function' => 'Tfa::__construct')));
     }
 
-    //How do we dynamically load the validate plugin class?
+    //Load up the current validation plugin.
     $validation_service = \Drupal::service('plugin.manager.tfa.validation');
     $validate_plugin = $validation_service->getDefinition($plugins['validate']);
     $this->validatePlugin = new $validate_plugin['class']($context);
+
+    //Check for login plugins (Shou'd this really be a loop?)
     if (!empty($plugins['login'])) {
       foreach ($plugins['login'] as $class) {
         $this->loginPlugins[] = new $class($context);
       }
     }
+    //Check for fallback plugins
     if (!empty($plugins['fallback'])) {
       $plugins['fallback'] = array_unique($plugins['fallback']);
       // @todo consider making plugin->ready a class method?

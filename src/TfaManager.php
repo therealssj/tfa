@@ -7,13 +7,81 @@
 namespace Drupal\tfa;
 
 
-use Drupal\tfa\Tfa;
+use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\user\Entity\User;
 use Drupal\Component\Utility\Crypt;
-use Drupal\user\UserStorageInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
-
+/**
+ *
+ * @todo finish cleaning up $SESSION
+ *
+ * Class TfaManager
+ * @package Drupal\tfa
+ */
 class TfaManager {
+
+  /**
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  protected $moduleHander;
+
+  /**
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
+   */
+  //protected $configFactory;
+
+  /**
+   * @var \Drupal\Core\Session\AccountProxyInterface
+   */
+  protected $currentUser;
+
+  /**
+   * @var \Drupal\Core\Entity\EntityManagerInterface
+   */
+  protected $entityManager;
+
+  /**
+   * @var \Symfony\Component\HttpFoundation\Session\SessionInterface
+   */
+  protected $session;
+
+  /**
+   * @var \Drupal\Core\Config\ImmutableConfig
+   */
+  protected $tfaSettings;
+
+  /**
+   * @var null|\Symfony\Component\HttpFoundation\Request
+   */
+  protected $request;
+
+  /**
+   * @var
+   */
+  protected $tfa;
+
+  /**
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
+   * @param \Drupal\Core\Session\AccountProxyInterface $current_user
+   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
+   * @param \Symfony\Component\HttpFoundation\Session\SessionInterface $session
+   */
+  function __construct(ModuleHandlerInterface $module_handler, ConfigFactoryInterface $config_factory, AccountProxyInterface $current_user, EntityManagerInterface $entity_manager, SessionInterface $session, RequestStack $request_stack ) {
+    $this->moduleHander = $module_handler;
+    //$this->configFactory = $config_factory;
+    $this->currentUser = $current_user;
+    $this->entityManager = $entity_manager;
+    $this->session = $session;
+    $this->tfaSettings = $config_factory->get('tfa.settings');
+    $this->request = $request_stack->getCurrentRequest();
+
+  }
 
 
   /**
@@ -22,22 +90,22 @@ class TfaManager {
    * @param $account User account object
    * @return Tfa
    */
-  //function _tfa_get_process($account) {
   public function getProcess($account) {
-    $tfa = &drupal_static(__FUNCTION__);
-    if (!isset($tfa)) {
+    //$tfa = &drupal_static(__FUNCTION__);
+    if (!isset($this->tfa)) {
       $context = $this->getContext($account);
       if (empty($context['plugins'])) {
         $context = $this->startContext($account);
       }
       try {
         // instansiate all plugins
-        $tfa = new Tfa($context['plugins'], $context);
-      } catch (\Exception $e) {
-        $tfa = FALSE;
+        $this->tfa = new Tfa($context['plugins'], $context);
+      }
+      catch (\Exception $e) {
+        $this->tfa = FALSE;
       }
     }
-    return $tfa;
+    return $this->tfa;
   }
 
   /**
@@ -47,18 +115,16 @@ class TfaManager {
    * @return array
    * @see _tfa_start_context() for format
    */
-  //function _tfa_get_context(User $account) {
   public function getContext(User $account) {
     $context = array();
-//  if (isset($_SESSION['tfa'][$account->id()])) {
-//    $context = $_SESSION['tfa'][$account->id()];
-//  }
+    $tfaSession = $this->request->getSession()->get('tfa');
+//    if (!empty($tfaSession[$account->id()])) {
+//      $context = $tfaSession[$account->id()];
+//    }
     // Allow other modules to modify TFA context.
-    \Drupal::moduleHandler()->alter('tfa_context', $context);
+    $this->moduleHander->alter('tfa_context', $context);
     return $context;
   }
-
-
 
 
   /**
@@ -75,24 +141,23 @@ class TfaManager {
    *       'setup' => 'TfaMySetupPlugin',
    *     ),
    *
-   *
    * @TODO TBD on purpose of $api defines the class name of the plugins, but we need to load
    * them by the plugin name. Is it actually doing us any good?
+   *
+   *
    */
-  //function _tfa_start_context($account) {
   public function startContext($account) {
     $context = array('uid' => $account->id(), 'plugins' => array());
     $plugins = array();
     $fallback_plugins = array();
 
-    $api = \Drupal::moduleHandler()->invokeAll('tfa_api', []);
-    $settings = \Drupal::config('tfa.settings');
-    if (\Drupal::config('tfa.settings')->get('login_plugins')) {
-      $plugins = \Drupal::config('tfa.settings')->get('login_plugins');
+    $api = $this->moduleHander->invokeAll('tfa_api', []);
+    if ($this->tfaSettings->get('login_plugins')) {
+      $plugins = $this->tfaSettings->get('login_plugins');
     }
 
-    if (\Drupal::config('tfa.settings')->get('fallback_plugins')) {
-      $fallback_plugins = \Drupal::config('tfa.settings')->get('fallback_plugins');
+    if ($this->tfaSettings->get('fallback_plugins')) {
+      $fallback_plugins = $this->tfaSettings->get('fallback_plugins');
     }
 
     // Add login plugins.
@@ -104,8 +169,8 @@ class TfaManager {
     }
     // Add validate.
     //@TODO Figure out why D8 decided to allow multiple validate plugins.
-    $validate = \Drupal::config('tfa.settings')->get('validate_plugins');
-    foreach($validate as $key => $value){
+    $validate = $this->tfaSettings->get('validate_plugins');
+    foreach ($validate as $key => $value) {
       if (!empty($validate) && array_key_exists($key, $api)) {
         $context['plugins']['validate'] = $key;
       }
@@ -118,7 +183,7 @@ class TfaManager {
       }
     }
     // Allow other modules to modify TFA context.
-    \Drupal::moduleHandler()->alter('tfa_context', $context);
+    $this->moduleHander->alter('tfa_context', $context);
     $this->setContext($account, $context);
     return $context;
   }
@@ -131,93 +196,11 @@ class TfaManager {
    * @see tfa_start_context() for context format
    */
   public function setContext($account, $context) {
-    $_SESSION['tfa'][$account->id()] = $context;
-    $_SESSION['tfa'][$account->id()]['uid'] = $account->id();
+
+    $context = array_merge(['uid' => $account->id()], $context);
+    $this->session->set('tfa', [$account->id() => $context]);
     // Clear existing static TFA process.
-    drupal_static_reset('tfa_get_process');
-  }
-
-
-
-  /**
-   * Login submit handler to determine if TFA process is applicable.
-   *
-   * @param array $form
-   * @param array $form_state
-   */
-  public function loginSubmit($form, &$form_state) {
-    // Similar to tfa_user_login() but not required to force user logout.
-    $tfaManager = \Drupal::service('tfa.manager');
-
-    if ($uid = $form_state->get('uid')) {
-      $account = \Drupal::entityManager()->getStorage('user')->load($uid);
-    }
-    else {
-      $account = user_load_by_name($form_state->get('name'));
-    }
-
-    if ($tfa = $tfaManager->getProcess($account)) {
-      if ($account->hasPermission('require tfa') && !$tfaManager->loginComplete($account) && !$tfa->ready()) {
-        drupal_set_message(t('Login disallowed. You are required to setup two-factor authentication. Please contact a site administrator.'), 'error');
-        $form_state['redirect'] = 'user';
-      }
-      elseif (!$tfaManager->loginComplete($account) && $tfa->ready() && !$tfa->loginAllowed($account)) {
-
-        // Restart flood levels, session context, and TFA process.
-        //flood_clear_event('tfa_validate');
-        //flood_register_event('tfa_begin');
-//      $context = tfa_start_context($account);
-//      $tfa = _tfa_get_process($account);
-
-        // $query = drupal_get_query_parameters();
-        if (!empty($form_state->redirect)) {
-          // If there's an existing redirect set it in TFA context and
-          // tfa_form_submit() will extract and set once process is complete.
-          $context['redirect'] = $form_state['redirect'];
-        }
-        unset($_GET['destination']);
-
-        // Begin TFA and set process context.
-        $tfa->begin();
-        $context = $tfa->getContext();
-        $tfaManager->setContext($account, $context);
-
-        $login_hash = $tfaManager->getLoginHash($account);
-        $form_state->setRedirect(
-          'tfa.entry',
-          ['user' => $account->id(),
-            'hash' => $login_hash]
-        //'tfa/' . $account->id() . '/' . $login_hash
-        //array('query' => $query),
-        );
-      }
-      else {
-        //@TODO Need to figure out what the proper way of doing this is.
-        // Currently duplicates UserLoginForm::submitForm() since user_submit_login
-        // doesn't exist anymore.
-        // We can't call the UserLoginForm::submitForm() method statically becuause
-        // it is not a static method.
-        $requestStack = \Drupal::service('request_stack');
-        // A destination was set, probably on an exception controller,
-        if (!$requestStack->getCurrentRequest()->request->has('destination')) {
-          $form_state->setRedirect(
-            'entity.user.canonical',
-            array('user' => $account->id())
-          );
-        }
-        else {
-          $requestStack->getCurrentRequest()->query->set('destination',  $requestStack->request->get('destination'));
-        }
-
-        user_login_finalize($account);
-
-      }
-    }
-    else {
-      drupal_set_message(t('Two-factor authentication is enabled but misconfigured. Please contact a site administrator.'), 'error');
-      $form_state->setRedirect('user.page');
-    }
-
+    $this->tfa = NULL;
   }
 
 
@@ -227,10 +210,10 @@ class TfaManager {
    * @param $account User account
    * @return bool
    */
-  //function _tfa_login_complete($account) {
   public function loginComplete($account) {
     // TFA master login allowed switch is set by tfa_login().
-    if (isset($_SESSION['tfa'][$account->uid]['login']) && $_SESSION['tfa'][$account->uid]['login'] === TRUE) {
+    $tfa_session = $this->session->get('tfa');
+    if (isset($tfa_session[$account->id()]['login']) && $tfa_session[$account->id()]['login'] === TRUE) {
       return TRUE;
     }
     return FALSE;
@@ -246,7 +229,11 @@ class TfaManager {
   public function getLoginHash($account) {
     // Using account login will mean this hash will become invalid once user has
     // authenticated via TFA.
-    $data = implode(':', array($account->getUsername() , $account->getPassword(), $account->getLastLoginTime()));
+    $data = implode(':', array(
+      $account->getUsername(),
+      $account->getPassword(),
+      $account->getLastLoginTime()
+    ));
     return Crypt::hashBase64($data);
   }
 
@@ -257,25 +244,15 @@ class TfaManager {
    * Does basically the same thing that user_login_finalize does but with our own custom
    * hooks.
    *
+   * @deprecated
+   *
+   * @TODO Use user_login_finalize and utilize the user_login hook that it implements to
+   * do the additional flood stuff.
+   *
    * @param $account User account object.
    */
-  //function _tfa_login($account) {
   public function login($account) {
-    \Drupal::currentUser()->setAccount($account);
-
-    // Update the user table timestamp noting user has logged in.
-    $account->setLastLoginTime(REQUEST_TIME);
-    \Drupal::entityManager()
-      ->getStorage('user')
-      ->updateLastLoginTimestamp($account);
-    // Regenerate the session ID to prevent against session fixation attacks.
-    \Drupal::service('session')->migrate();
-    \Drupal::service('session')->set('uid', $account->id());
-
-    //watchdog('tfa', 'Session opened for %name.', array('%name' => $user->getUsername()));
-    // Clear existing context and set master authenticated context.
-    $this->clearContext($account);
-    $_SESSION['tfa'][$account->id()]['login'] = TRUE;
+    //@todo Implement flood controls for the TFA login.
 
     // Truncate flood for user.
     //flood_clear_event('tfa_begin');
@@ -292,7 +269,7 @@ class TfaManager {
    *   User account object
    */
   public function clearContext($account) {
-    unset($_SESSION['tfa'][$account->uid]);
+    unset($this->session->get('tfa')[$account->uid]);
   }
 
 

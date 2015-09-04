@@ -13,3 +13,8 @@ services:
     parent: default_plugin_manager
   tfa.manager:
     class: Drupal\tfa\TfaManager
+    arguments: ['@module_handler', '@config.factory', '@current_user', '@entity.manager', '@session', '@request_stack']
+  tfa.route_subscriber:
+    class: Drupal\tfa\Routing\TfaRouteSubscriber
+    tags:
+      - { name: event_subscriber }
