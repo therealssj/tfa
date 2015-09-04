@@ -96,13 +96,12 @@ function tfa_block_access(\Drupal\block\Entity\Block $block, $operation, \Drupal
 /**
  * Implements hook_block_alter().
  *
- * Removes the User Login Block if TFA authentication is enabled.
+ * Removes the User Login Block if the TFA module is enabled. The TFA User Login
+ * block will function with or without TFA actually being enabled.
+ *
  */
 function tfa_block_alter(&$definitions) {
-  $tfa_enabled = \Drupal::config('tfa.settings')->get('enabled');
-  if ($tfa_enabled) {
-    unset($definitions['user_login_block']);
-  }
+  unset($definitions['user_login_block']);
 }
 
 
