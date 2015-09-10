@@ -89,6 +89,7 @@ class TfaManager {
    *
    * @param $account User account object
    * @return Tfa
+   * @deprecated
    */
   public function getProcess($account) {
     //$tfa = &drupal_static(__FUNCTION__);
@@ -114,6 +115,7 @@ class TfaManager {
    * @param User $account
    * @return array
    * @see _tfa_start_context() for format
+   * @deprecated
    */
   public function getContext(User $account) {
     $context = array();
@@ -144,7 +146,7 @@ class TfaManager {
    * @TODO TBD on purpose of $api defines the class name of the plugins, but we need to load
    * them by the plugin name. Is it actually doing us any good?
    *
-   *
+   * @deprecated
    */
   public function startContext($account) {
     $context = array('uid' => $account->id(), 'plugins' => array());
@@ -194,6 +196,7 @@ class TfaManager {
    * @param $account User account
    * @param array $context Context array
    * @see tfa_start_context() for context format
+   * @deprecated
    */
   public function setContext($account, $context) {
 
@@ -204,38 +207,7 @@ class TfaManager {
   }
 
 
-  /**
-   * Check if TFA process has completed so authentication should not be stopped.
-   *
-   * @param $account User account
-   * @return bool
-   */
-  public function loginComplete($account) {
-    // TFA master login allowed switch is set by tfa_login().
-    $tfa_session = $this->session->get('tfa');
-    if (isset($tfa_session[$account->id()]['login']) && $tfa_session[$account->id()]['login'] === TRUE) {
-      return TRUE;
-    }
-    return FALSE;
-  }
 
-  /**
-   * Generate account hash to access the TFA form.
-   *
-   * @param object $account User account.
-   * @return string Random hash.
-   */
-  //function tfa_login_hash($account) {
-  public function getLoginHash($account) {
-    // Using account login will mean this hash will become invalid once user has
-    // authenticated via TFA.
-    $data = implode(':', array(
-      $account->getUsername(),
-      $account->getPassword(),
-      $account->getLastLoginTime()
-    ));
-    return Crypt::hashBase64($data);
-  }
 
 
   /**
@@ -250,6 +222,7 @@ class TfaManager {
    * do the additional flood stuff.
    *
    * @param $account User account object.
+   * @deprecated
    */
   public function login($account) {
     //@todo Implement flood controls for the TFA login.
@@ -267,6 +240,7 @@ class TfaManager {
    *
    * @param object $account
    *   User account object
+   * @deprecated
    */
   public function clearContext($account) {
     unset($this->session->get('tfa')[$account->uid]);
@@ -275,6 +249,7 @@ class TfaManager {
 
   /**
    * Validate access to TFA code entry form.
+   * @deprecated
    */
   public function entryAccess($account, $url_hash) {
     // Generate a hash for this account.

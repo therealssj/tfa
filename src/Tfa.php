@@ -135,6 +135,7 @@ class Tfa {
    * @param array $form
    * @param FormStateInterface $form_state
    * @return array Form API array.
+   * @deprecated
    */
   public function getForm(array $form, FormStateInterface $form_state) {
     $form = $this->validatePlugin->getForm($form, $form_state);
@@ -154,6 +155,7 @@ class Tfa {
    *
    * @param string $window
    * @return bool
+   * @deprecated
    */
   public function floodIsAllowed($window = '') {
     if (method_exists($this->validatePlugin, 'floodIsAllowed')) {
@@ -167,6 +169,7 @@ class Tfa {
    * Return process error messages.
    *
    * @return array
+   * @deprecated
    */
   public function getErrorMessages() {
     return $this->validatePlugin->getErrorMessages();
@@ -182,6 +185,7 @@ class Tfa {
    * @param FormStateInterface $form_state
    * @return bool Whether the validate plugin is complete.
    *   FALSE will cause tfa_form_submit() to rebuild the form for multi-step.
+   * @deprecated
    */
   public function submitForm(array $form, FormStateInterface $form_state) {
     // Handle fallback if set.
@@ -218,6 +222,7 @@ class Tfa {
    * Whether the TFA process has any fallback proceses.
    *
    * @return bool
+   * @deprecated
    */
   public function hasFallback() {
     return $this->fallback;
@@ -227,6 +232,7 @@ class Tfa {
    * Return TFA context.
    *
    * @return array
+   * @deprecated
    */
   public function getContext() {
     if (method_exists($this->validatePlugin, 'getPluginContext')) {
@@ -238,6 +244,7 @@ class Tfa {
 
   /**
    * Run TFA process finalization.
+   * @deprecated
    */
   public function finalize() {
     // Invoke plugin finalize.
