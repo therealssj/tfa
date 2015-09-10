@@ -126,32 +126,8 @@ class Tfa {
     $this->context['plugins'] = $plugins;
   }
 
-  /**
-   * Whether authentication should be allowed and not interrupted.
-   *
-   * If any plugin returns TRUE then authentication is not interrupted by TFA.
-   *
-   * @return bool
-   */
-  public function loginAllowed() {
-    if (!empty($this->loginPlugins)) {
-      foreach ($this->loginPlugins as $class) {
-        if ($class->loginAllowed()) {
-          return TRUE;
-        }
-      }
-    }
-    return FALSE;
-  }
 
-  /**
-   * Determine if TFA process is ready.
-   *
-   * @return bool Whether process can begin or not.
-   */
-  public function ready() {
-    return $this->validatePlugin->ready();
-  }
+
 
   /**
    * Get TFA process form from plugin.
@@ -186,16 +162,6 @@ class Tfa {
     return TRUE;
   }
 
-  /**
-   * Validate form.
-   *
-   * @param array $form
-   * @param FormStateInterface $form_state
-   * @return bool
-   */
-  public function validateForm(array $form, FormStateInterface $form_state) {
-    return $this->validatePlugin->validateForm($form, $form_state);
-  }
 
   /**
    * Return process error messages.
@@ -247,15 +213,6 @@ class Tfa {
     return $this->complete;
   }
 
-  /**
-   * Begin the TFA process.
-   */
-  public function begin() {
-    // Invoke begin method on send validation plugins.
-    if (method_exists($this->validatePlugin, 'begin')) {
-      $this->validatePlugin->begin();
-    }
-  }
 
   /**
    * Whether the TFA process has any fallback proceses.
