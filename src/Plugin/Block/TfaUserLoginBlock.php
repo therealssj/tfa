@@ -87,7 +87,7 @@ class TfaUserLoginBlock extends UserLoginBlock  {
     unset($form['pass']['#description']);
     $form['name']['#size'] = 15;
     $form['pass']['#size'] = 15;
-    $form['#action'] = $this->url('<current>', [], ['query' => $this->getDestinationArray(), 'external' => FALSE]);
+    //$form['#action'] = $this->url('<current>', [], ['query' => $this->getDestinationArray(), 'external' => FALSE]);
 
     // Build action links.
     $items = array();

@@ -126,32 +126,8 @@ class Tfa {
     $this->context['plugins'] = $plugins;
   }
 
-  /**
-   * Whether authentication should be allowed and not interrupted.
-   *
-   * If any plugin returns TRUE then authentication is not interrupted by TFA.
-   *
-   * @return bool
-   */
-  public function loginAllowed() {
-    if (!empty($this->loginPlugins)) {
-      foreach ($this->loginPlugins as $class) {
-        if ($class->loginAllowed()) {
-          return TRUE;
-        }
-      }
-    }
-    return FALSE;
-  }
 
-  /**
-   * Determine if TFA process is ready.
-   *
-   * @return bool Whether process can begin or not.
-   */
-  public function ready() {
-    return $this->validatePlugin->ready();
-  }
+
 
   /**
    * Get TFA process form from plugin.
@@ -159,6 +135,7 @@ class Tfa {
    * @param array $form
    * @param FormStateInterface $form_state
    * @return array Form API array.
+   * @deprecated
    */
   public function getForm(array $form, FormStateInterface $form_state) {
     $form = $this->validatePlugin->getForm($form, $form_state);
@@ -178,6 +155,7 @@ class Tfa {
    *
    * @param string $window
    * @return bool
+   * @deprecated
    */
   public function floodIsAllowed($window = '') {
     if (method_exists($this->validatePlugin, 'floodIsAllowed')) {
@@ -186,21 +164,12 @@ class Tfa {
     return TRUE;
   }
 
-  /**
-   * Validate form.
-   *
-   * @param array $form
-   * @param FormStateInterface $form_state
-   * @return bool
-   */
-  public function validateForm(array $form, FormStateInterface $form_state) {
-    return $this->validatePlugin->validateForm($form, $form_state);
-  }
 
   /**
    * Return process error messages.
    *
    * @return array
+   * @deprecated
    */
   public function getErrorMessages() {
     return $this->validatePlugin->getErrorMessages();
@@ -216,6 +185,7 @@ class Tfa {
    * @param FormStateInterface $form_state
    * @return bool Whether the validate plugin is complete.
    *   FALSE will cause tfa_form_submit() to rebuild the form for multi-step.
+   * @deprecated
    */
   public function submitForm(array $form, FormStateInterface $form_state) {
     // Handle fallback if set.
@@ -247,20 +217,12 @@ class Tfa {
     return $this->complete;
   }
 
-  /**
-   * Begin the TFA process.
-   */
-  public function begin() {
-    // Invoke begin method on send validation plugins.
-    if (method_exists($this->validatePlugin, 'begin')) {
-      $this->validatePlugin->begin();
-    }
-  }
 
   /**
    * Whether the TFA process has any fallback proceses.
    *
    * @return bool
+   * @deprecated
    */
   public function hasFallback() {
     return $this->fallback;
@@ -270,6 +232,7 @@ class Tfa {
    * Return TFA context.
    *
    * @return array
+   * @deprecated
    */
   public function getContext() {
     if (method_exists($this->validatePlugin, 'getPluginContext')) {
@@ -281,6 +244,7 @@ class Tfa {
 
   /**
    * Run TFA process finalization.
+   * @deprecated
    */
   public function finalize() {
     // Invoke plugin finalize.
