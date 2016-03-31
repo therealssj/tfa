@@ -83,7 +83,7 @@ class TfaLoginForm extends UserLoginForm {
     if (isset($tfaValidationPlugin)) {
       if ($account->hasPermission('require tfa') && !$this->loginComplete($account) && !$this->ready($tfaValidationPlugin)) {
         drupal_set_message(t('Login disallowed. You are required to setup two-factor authentication. Please contact a site administrator.'), 'error');
-        $form_state['redirect'] = 'user';
+        $form_state->setRedirect('user.page');
       }
       elseif (!$this->loginComplete($account) && $this->ready($tfaValidationPlugin)) {  // && !$this->loginAllowed($account)) {
 

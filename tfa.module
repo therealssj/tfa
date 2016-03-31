@@ -82,10 +82,9 @@ function tfa_user_login($account) {
  * @param \Drupal\block\Entity\Block $block
  * @param $operation
  * @param \Drupal\user\Entity\User $account
- * @param $langcode
  * @return \Drupal\Core\Access\AccessResult
  */
-function tfa_block_access(\Drupal\block\Entity\Block $block, $operation, \Drupal\Core\Session\AccountInterface $account, $langcode){
+function tfa_block_access(\Drupal\block\Entity\Block $block, $operation, \Drupal\Core\Session\AccountInterface $account){
   if(\Drupal::config('tfa.settings')->get('enabled') && $block->getPluginId() === 'user_login_block'){
     return AccessResult::forbidden();
   }

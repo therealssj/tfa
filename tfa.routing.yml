@@ -8,7 +8,7 @@ tfa.entry:
   options:
     _maintenance_access: TRUE
 tfa.settings:
-  path: 'admin/config/security/tfa'
+  path: 'admin/config/people/tfa'
   defaults:
     _form: '\Drupal\tfa\Form\SettingsForm'
     _title: 'TFA Settings'
