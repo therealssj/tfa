@@ -33,7 +33,7 @@ function tfa_user_login($account) {
     return;
   }
 
-  drupal_set_message(t('TFA is enabled.'));
+//  drupal_set_message(t('TFA is enabled.'));
 
   //$tfa = tfa_get_process($account);
 
