@@ -20,6 +20,9 @@ use Drupal\Component\Utility\Crypt;
 
 class TfaLoginForm extends UserLoginForm {
 
+  /**
+   * @var \Drupal\tfa\TfaValidationPluginManager
+   */
   protected $tfaValidationManager;
 
   /**
@@ -97,7 +100,7 @@ class TfaLoginForm extends UserLoginForm {
         if (!empty($form_state->redirect)) {
           // If there's an existing redirect set it in TFA context and
           // tfa_form_submit() will extract and set once process is complete.
-          $context['redirect'] = $form_state['redirect'];
+          $context['redirect'] = $form_state->redirect;
         }
 
         // Begin TFA and set process context.
