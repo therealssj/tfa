@@ -23,7 +23,7 @@ class EntryForm extends FormBase {
   protected $tfaValidationManager;
   protected $tfaLoginManager;
   protected $tfaValidationPlugin;
-  protected $tfaLoginPlugin;
+  protected $tfaLoginPlugins;
   protected $tfaFallbackPlugin;
 
   public function __construct(TfaValidationPluginManager $tfa_validation_manager, TfaLoginPluginManager $tfa_login_manager) {
@@ -60,9 +60,15 @@ class EntryForm extends FormBase {
 
     // Get TFA plugins form.
     $this->tfaValidationPlugin = $this->tfaValidationManager->getInstance(['uid' => $user->id()]);
-    //@TODO Add $login plugin and allow it to alter the form.
     $form =  $this->tfaValidationPlugin->getForm($form, $form_state);
 
+    if ($this->tfaLoginPlugins = $this->tfaLoginManager->getPlugins(['uid' => $user->id()])) {
+      foreach ($this->tfaLoginPlugins as $login_plugin) {
+        if (method_exists($login_plugin, 'getForm')) {
+          $form = $login_plugin->getForm($form, $form_state);
+        }
+      }
+    }
 
   //@TODO Add $fallback plugin capabilities.
     //If there is a fallback method, set it.
@@ -90,6 +96,13 @@ class EntryForm extends FormBase {
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     $this->tfaValidationPlugin->validateForm($form, $form_state);
+    if (!empty($this->tfaLoginPlugins)) {
+      foreach ($this->tfaLoginPlugins as $login_plugin) {
+        if (method_exists($login_plugin, 'validateForm')) {
+          $login_plugin->validateForm($form, $form_state);
+        }
+      }
+    }
   }
 
   /**
@@ -117,13 +130,43 @@ class EntryForm extends FormBase {
     //else {
     // TFA process is complete so finalize and authenticate user.
     //$context = $this->tfaManager->getContext($user);
-    //$tfa->finalize();
+
+    if (!empty($this->tfaLoginPlugins)) {
+      foreach ($this->tfaLoginPlugins as $plugin) {
+        if (method_exists($plugin, 'submitForm')) {
+          $plugin->submitForm($form, $form_state);
+        }
+      }
+    }
+
     user_login_finalize($user);
+
+    // TODO Should finalize() be after user_login_finalize or before?!
+    $this->finalize();
+
 
     // Set redirect based on query parameters, existing $form_state or context.
     //$form_state['redirect'] = _tfa_form_get_destination($context, $form_state, $user);
     $form_state->setRedirect('<front>');
     //}
+  }
+
+  /**
+   * Run TFA process finalization.
+   */
+  public function finalize() {
+    // Invoke plugin finalize.
+    if (method_exists($this->tfaValidationPlugin, 'finalize')) {
+      $this->tfaValidationPlugin->finalize();
+    }
+    // Allow login plugins to act during finalization.
+    if (!empty($this->tfaLoginPlugins)) {
+      foreach ($this->tfaLoginPlugins as $plugin) {
+        if (method_exists($plugin, 'finalize')) {
+          $plugin->finalize();
+        }
+      }
+    }
   }
 
   /**

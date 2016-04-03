@@ -6,6 +6,7 @@
 
 namespace Drupal\tfa\Form;
 
+use Drupal\tfa\TfaLoginPluginManager;
 use Drupal\tfa\TfaValidationPluginManager;
 use Drupal\user\Form\UserLoginForm;
 use Drupal\Core\Flood\FloodInterface;
@@ -24,6 +25,10 @@ class TfaLoginForm extends UserLoginForm {
    * @var \Drupal\tfa\TfaValidationPluginManager
    */
   protected $tfaValidationManager;
+  protected $tfaLoginManager;
+
+  protected $tfaValidationPlugin;
+  protected $tfaLoginPlugins;
 
   /**
    * Constructs a new UserLoginForm.
@@ -37,9 +42,10 @@ class TfaLoginForm extends UserLoginForm {
    * @param \Drupal\Core\Render\RendererInterface $renderer
    *   The renderer.
    */
-  public function __construct(FloodInterface $flood, UserStorageInterface $user_storage, UserAuthInterface $user_auth, RendererInterface $renderer, TfaValidationPluginManager $tfa_validation_manager) {
+  public function __construct(FloodInterface $flood, UserStorageInterface $user_storage, UserAuthInterface $user_auth, RendererInterface $renderer, TfaValidationPluginManager $tfa_validation_manager, TfaLoginPluginManager $tfa_plugin_manager) {
     parent::__construct($flood, $user_storage, $user_auth, $renderer);
     $this->tfaValidationManager = $tfa_validation_manager;
+    $this->tfaLoginManager = $tfa_plugin_manager;
   }
 
   /**
@@ -51,7 +57,8 @@ class TfaLoginForm extends UserLoginForm {
       $container->get('entity.manager')->getStorage('user'),
       $container->get('user.auth'),
       $container->get('renderer'),
-      $container->get('plugin.manager.tfa.validation')
+      $container->get('plugin.manager.tfa.validation'),
+      $container->get('plugin.manager.tfa.login')
     );
   }
 
@@ -81,6 +88,7 @@ class TfaLoginForm extends UserLoginForm {
     //Pass to service functions.
     /** @var  $tfaValidationPlugin \Drupal\tfa\Plugin\TfaValidationInterface */
     $tfaValidationPlugin = $this->tfaValidationManager->getInstance(['uid' => $account->id()]);
+    $this->tfaLoginPlugins = $this->tfaLoginManager->getPlugins(['uid' => $account->id()]);
 
     //Setup TFA
     if (isset($tfaValidationPlugin)) {
@@ -88,7 +96,7 @@ class TfaLoginForm extends UserLoginForm {
         drupal_set_message(t('Login disallowed. You are required to setup two-factor authentication. Please contact a site administrator.'), 'error');
         $form_state->setRedirect('user.page');
       }
-      elseif (!$this->loginComplete($account) && $this->ready($tfaValidationPlugin)) {  // && !$this->loginAllowed($account)) {
+      elseif (!$this->loginComplete($account) && $this->ready($tfaValidationPlugin) && !$this->loginAllowed($account)) {
 
         // Restart flood levels, session context, and TFA process.
         //flood_clear_event('tfa_validate');
@@ -178,14 +186,14 @@ class TfaLoginForm extends UserLoginForm {
    * @param \Drupal\tfa\Plugin\TfaLoginInterface $tfaLogin
    * @return bool
    */
-  protected function loginAllowed(TfaLoginInterface $tfaLoginPlugin) {
-//    if (!empty($tfaLoginPlugin)) {
-//      foreach ($tfaLoginPlugin as $class) {
-//        if ($class->loginAllowed()) {
-//          return TRUE;
-//        }
-//      }
-//    }
+  protected function loginAllowed() {
+    if (!empty($this->tfaLoginPlugins)) {
+      foreach ($this->tfaLoginPlugins as $plugin) {
+        if ($plugin->loginAllowed()) {
+          return TRUE;
+        }
+      }
+    }
     return FALSE;
   }
 
