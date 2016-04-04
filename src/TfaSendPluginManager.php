@@ -10,9 +10,10 @@ use Drupal\Core\Plugin\Discovery\AnnotatedClassDiscovery;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Language\LanguageManager;
+use Drupal\Core\Plugin\DefaultPluginManager;
 
 
-class TfaSendPluginManager extends \Drupal\Core\Plugin\DefaultPluginManager {
+class TfaSendPluginManager extends DefaultPluginManager {
   /**
    * Constructs a new TfaSend plugin manager.
    *
