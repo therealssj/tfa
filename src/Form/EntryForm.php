@@ -131,6 +131,7 @@ class EntryForm extends FormBase {
     // TFA process is complete so finalize and authenticate user.
     //$context = $this->tfaManager->getContext($user);
 
+    // TODO This could be improved with EventDispatcher
     if (!empty($this->tfaLoginPlugins)) {
       foreach ($this->tfaLoginPlugins as $plugin) {
         if (method_exists($plugin, 'submitForm')) {
@@ -142,6 +143,7 @@ class EntryForm extends FormBase {
     user_login_finalize($user);
 
     // TODO Should finalize() be after user_login_finalize or before?!
+    // TODO This could be improved with EventDispatcher
     $this->finalize();
 
 
