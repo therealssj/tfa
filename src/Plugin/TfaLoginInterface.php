@@ -21,4 +21,5 @@ interface TfaLoginInterface {
    * @return bool
    */
   public function loginAllowed();
+
 }
