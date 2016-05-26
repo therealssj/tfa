@@ -55,7 +55,7 @@ class TfaValidationPluginManager extends DefaultPluginManager {
    * @return false|object
    */
   public function getInstance(array $options) {
-    $validate_plugin = 'tfa_basic_totp';
+    $validate_plugin = 'tfa_totp';
     // Add validate.
     //@TODO Fix this to allow for a single validation to be selected.
     $validate = $this->tfaSettings->get('validate_plugins');
