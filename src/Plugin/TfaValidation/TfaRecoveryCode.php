@@ -133,4 +133,8 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
     return $this->isValid;
   }
 
+  public function getFallbacks(){
+    return ($this->pluginDefinition['fallbacks']) ?: '';
+  }
+
 }
