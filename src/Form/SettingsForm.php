@@ -85,9 +85,17 @@ class SettingsForm extends ConfigFormBase {
     //Get Validation Plugins
     $validate_plugins = $this->tfaValidation->getDefinitions();
 
+    // Get validation plugin labels and their fallbacks
+    $validate_plugins_labels = [];
+    $validate_plugins_fallbacks = [];
+    foreach($validate_plugins as $plugin){
+      $validate_plugins_labels[ $plugin['id'] ] = $plugin['label']->render();
+      $validate_plugins_fallbacks[ $plugin['id'] ] = $plugin['fallbacks'];
+    }
+
+
     //Get Setup Plugins
     $setup_plugins = $this->tfaSetup->getDefinitions();
-
 
     // Check if mcrypt plugin is available.
     /*
@@ -116,84 +124,73 @@ class SettingsForm extends ConfigFormBase {
       '#description' => t('Enable TFA for account authentication.'),
     );
 
-    //@TODO Figure out why we allow multiple validation plugins?
+    $enabled_state = array('visible' => array(
+      ':input[name="tfa_enabled"]' => array('checked' => TRUE))
+    );
+
     if (count($validate_plugins)) {
-
-      //order plugins by weight
-      $weights = ($config->get('validate_weights')) ? $config->get('validate_weights') : array();
-
-      //sort weight array by weight
-      asort($weights);
-      //get the max weight for unregistered elements
-      $max_weight = max(array_values($weights));
-
-      $form['validate_plugins'] = array(
-        '#type' => 'table',
-        '#header' => array(t('Enabled'), t('Validation Plugins'), t('Weight'),),
-        '#empty' => t('There are no constraints for the selected user roles'),
-        //TODO - This is throwing errors due to combination of weighting and checkboxes
-        //'#tableselect' => TRUE,
-        '#tabledrag' => array(
-          array(
-            'action' => 'order',
-            'relationship' => 'sibling',
-            'group' => 'validate-plugins-order-weight',
-          ),
-        ),
-        //'#default_value' => ($config->get('validate_plugins'))?$config->get('validate_plugins'):array(),
+      $form['tfa_validate'] = array(
+        '#type' => 'select',
+        '#title' => t('Default validation plugin'),
+        '#options' =>  $validate_plugins_labels,
+        '#default_value' => \Drupal::config('tfa.settings')->get('validate_plugin'),
+        '#description' => t('Plugin that will be used as the default TFA process.'),
+        //Show only when TFA is enabled
+        '#states' => $enabled_state,
       );
-
-      //add unregistered plugins to weighted array
-      foreach ($validate_plugins as $validate_plugin) {
-        $id = $validate_plugin['id'];
-        if (!in_array($id, array_keys($weights))) {
-          $max_weight++;
-          $weights[$id] = $max_weight;
-        }
-      }
-
-      // Render table.
-      foreach ($weights as $id => $weight) {
-        // @todo: Plugin removed but stored in $weights - whops.
-        if (!isset($validate_plugins[$id])) {
-          continue;
-        }
-        $validate_plugin = $validate_plugins[$id];
-        $title = $validate_plugin['label']->render();
-        // TableDrag: Mark the table row as draggable.
-        $form['validate_plugins'][$id]['#attributes']['class'][] = 'draggable';
-        // TableDrag: Sort the table row according to its existing/configured weight.
-        $form['validate_plugins'][$id]['#weight'] = $weight;
-
-        // Some table columns containing raw markup.
-        $form['validate_plugins'][$id]['enabled'] = array(
-          '#type' => 'checkbox',
-          '#return_value' => $id,
-          '#default_value' => (in_array($id, $config->get('validate_plugins')) ? $id : '0')
-        );
-
-        $form['validate_plugins'][$id]['title'] = array(
-          '#markup' => $title . ' (' . $validate_plugin['provider'] . ')',
-        );
-
-        // TableDrag: Weight column element.
-        $form['validate_plugins'][$id]['weight'] = array(
-          '#type' => 'weight',
-          '#title' => t('Weight for @title', array('@title' => $title)),
-          '#title_display' => 'invisible',
-          '#default_value' => $weight,
-          // Classify the weight element for #tabledrag.
-          '#attributes' => array('class' => array('validate-plugins-order-weight')),
-        );
-      }
-
-
     }
     else {
       $form['no_validate'] = array(
         '#value' => 'markup',
         '#markup' => t('No available validation plugins available. TFA process will not occur.'),
       );
+    }
+
+    if(count($validate_plugins_fallbacks)){
+      $form['tfa_fallback'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Validation fallback plugins'),
+        '#description' => t('Fallback plugins and order. Note, if a fallback plugin is not setup for an account it will not be active in the TFA form.'),
+        '#states' => $enabled_state,
+        '#tree' => TRUE,
+      );
+
+      $enabled_fallback_plugins = \Drupal::config('tfa.settings')->get('fallback_plugins');
+      foreach ($validate_plugins_fallbacks as $plugin => $fallbacks) {
+        $fallback_state  = array(
+          'visible' => array(
+            ':input[name="tfa_validate"]' => array('value' => $plugin)
+          )
+        );
+        if(count($fallbacks)) {
+          foreach ($fallbacks as $fallback) {
+            $order = (@$enabled_fallback_plugins[$plugin][$fallback]['weight']) ?: -2;
+            $fallback_value = (@$enabled_fallback_plugins[$plugin][$fallback]['enable']) ?: 1;
+            $form['tfa_fallback'][$plugin][$fallback] = array(
+              'enable' => array(
+                '#title'         => $validate_plugins_labels[$fallback],
+                '#type'          => 'checkbox',
+                '#default_value' => $fallback_value,
+                '#states'        => $fallback_state,
+              ),
+              'weight' => array(
+                '#type'          => 'weight',
+                '#title'         => t('Order'),
+                '#delta'         => 2,
+                '#default_value' => $order,
+                '#title_display' => 'invisible',
+                '#states'        => $fallback_state,
+              ),
+            );
+          }
+        }else{
+          $form['tfa_fallback'][$plugin]= array(
+            '#type' => 'item',
+            '#description' => t('No fallback plugins available.'),
+            '#states'        => $fallback_state,
+          );
+        }
+      }
     }
 
 
@@ -270,26 +267,17 @@ class SettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $validate_plugins = array();
-    $validate_weights = array();
+    $validate_plugin = $form_state->getValue('tfa_validate');
+    $fallback_plugins = $form_state->getValue('tfa_fallback');
 
-    $validate_values = $form_state->getValue('validate_plugins');
-
-    foreach ($validate_values as $plugin_id => $plugin_settings) {
-      if ($plugin_settings['enabled']) {
-        $validate_plugins[$plugin_id] = $plugin_id;
-      }
-
-      $validate_weights[$plugin_id] = $plugin_settings['weight'];
-    }
 
     $this->config('tfa.settings')
       ->set('enabled', $form_state->getValue('tfa_enabled'))
       ->set('setup_plugins', array_filter($form_state->getValue('tfa_setup')))
       ->set('send_plugins', array_filter($form_state->getValue('tfa_send')))
       ->set('login_plugins', array_filter($form_state->getValue('tfa_login')))
-      ->set('validate_plugins', $validate_plugins)
-      ->set('validate_weights', $validate_weights)
+      ->set('validate_plugin', $validate_plugin)
+      ->set('fallback_plugins', $fallback_plugins)
       ->save();
 
     parent::submitForm($form, $form_state);
