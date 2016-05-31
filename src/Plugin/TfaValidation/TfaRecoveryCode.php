@@ -14,7 +14,7 @@ use Drupal\Core\Form\FormStateInterface;
 /**
  * @TfaValidation(
  *   id = "tfa_recovery_code",
- *   label = @Translation("TFA Recovery Code Validation"),
+ *   label = @Translation("TFA Recovery Code"),
  *   description = @Translation("TFA Recovery Code Validation Plugin")
  * )
  */
@@ -131,6 +131,10 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
     }
     $this->errorMessages['code'] = t('Invalid recovery code.');
     return $this->isValid;
+  }
+
+  public function getFallbacks(){
+    return ($this->pluginDefinition['fallbacks']) ?: '';
   }
 
 }

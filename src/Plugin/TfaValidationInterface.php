@@ -22,6 +22,7 @@ interface TfaValidationInterface {
    *
    * @param array $form
    * @param FormStateInterface $form_state
+   *
    * @return array Form API array.
    */
   public function getForm(array $form, FormStateInterface $form_state);
@@ -31,7 +32,15 @@ interface TfaValidationInterface {
    *
    * @param array $form
    * @param FormStateInterface $form_state
+   *
    * @return bool Whether form passes validation or not
    */
   public function validateForm(array $form, FormStateInterface $form_state);
+
+  /**
+   * Returns a list of fallback methods available for this validation
+   * @return string[]
+   */
+  public function getFallbacks();
+
 }

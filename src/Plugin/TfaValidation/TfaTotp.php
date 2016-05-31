@@ -19,8 +19,11 @@ use PHPGangsta_GoogleAuthenticator as GoogleAuthenticator;
 /**
  * @TfaValidation(
  *   id = "tfa_totp",
- *   label = @Translation("TFA Toptp Validation"),
- *   description = @Translation("TFA Toptp Validation Plugin")
+ *   label = @Translation("TFA Totp"),
+ *   description = @Translation("TFA Totp Validation Plugin"),
+ *   fallbacks = {
+ *    "tfa_recovery_code"
+ *   }
  * )
  */
 class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
@@ -178,5 +181,9 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
       ->condition('uid', \Drupal::currentUser()->id());
 
     return $query->execute();
+  }
+
+  public function getFallbacks(){
+    return ($this->pluginDefinition['fallbacks']) ?: '';
   }
 }

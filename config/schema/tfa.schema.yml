@@ -14,9 +14,9 @@ tfa.settings:
     login_plugins:
       type: sequence
       label: 'Login plugins'
-    validate_plugins:
+    validate_plugin:
+      type: string
+      label: 'Current validation plugin'
+    fallback_plugins:
       type: sequence
-      label: 'Validation plugins'
-    validate_weights:
-      type: sequence
-      label: 'Validation plugins weights'
+      label: 'Fallback plugins'
