@@ -14,7 +14,9 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\user\Entity\User;
 use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Site\Settings;
-use PHPGangsta_GoogleAuthenticator as GoogleAuthenticator;
+use Otp\Otp;
+use Otp\GoogleAuthenticator;
+use Base32\Base32;
 
 /**
  * @TfaValidation(
@@ -29,9 +31,9 @@ use PHPGangsta_GoogleAuthenticator as GoogleAuthenticator;
 class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
 
   /**
-   * @var PHPGangsta_GoogleAuthenticator
+   * @var GoogleAuthenticator
    */
-  protected $ga;
+  protected $auth;
 
   /**
    * @var int
@@ -49,7 +51,9 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
    */
   public function __construct(array $configuration, $plugin_id, $plugin_definition) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
-    $this->ga = new GoogleAuthenticator();
+    $this->auth = new \StdClass();
+    $this->auth->otp = new Otp();
+    $this->auth->ga  = new GoogleAuthenticator();
     // Allow codes within tolerance range of 3 * 30 second units.
     $this->timeSkew = \Drupal::config('tfa_basic.settings')->get('time_skew');
     // Recommended: set variable tfa_totp_secret_key in settings.php.
@@ -114,7 +118,7 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
     else {
       // Get OTP seed.
       $seed = $this->getSeed();
-      $this->isValid = ($seed && $this->ga->verifyCode($seed, $code, $this->timeSkew));
+      $this->isValid = ($seed && $this->auth->otp->checkTotp(Base32::decode($seed), $code, $this->timeSkew));
     }
     return $this->isValid;
   }
@@ -127,7 +131,7 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
     $hash = hash('sha1', Settings::getHashSalt() . $code);
     db_insert('tfa_accepted_code')
       ->fields(array(
-        'uid' => $this->context['uid'],
+        'uid' => $this->configuration['uid'],
         'code_hash' => $hash,
         'time_accepted' => REQUEST_TIME,
       ))
@@ -144,7 +148,7 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
     $hash = hash('sha1', Settings::getHashSalt() . $code);
     $result = db_query(
       "SELECT code_hash FROM {tfa_accepted_code} WHERE uid = :uid AND code_hash = :code",
-      array(':uid' => $this->context['uid'], ':code' => $hash)
+      array(':uid' => $this->configuration['uid'], ':code' => $hash)
     )->fetchAssoc();
     if (!empty($result)) {
       $this->alreadyAccepted = TRUE;
@@ -160,9 +164,10 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
    */
   protected function getSeed() {
     // Lookup seed for account and decrypt.
-    $result = db_query("SELECT seed FROM {tfa_totp_seed} WHERE uid = :uid", array(':uid' => $this->context['uid']))->fetchAssoc();
+    $uid =  $this->configuration['uid'];
+    $result = db_query("SELECT seed FROM {tfa_totp_seed} WHERE uid = :uid", array(':uid' => $uid))->fetchAssoc();
     if (!empty($result)) {
-      $encrypted = base64_decode($result['seed']);
+      $encrypted = Base32::decode($result['seed']);
       $seed = $this->decrypt($encrypted);
       if (!empty($seed)) {
         return $seed;
@@ -178,7 +183,7 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
    */
   public function deleteSeed() {
     $query = db_delete('tfa_totp_seed')
-      ->condition('uid', \Drupal::currentUser()->id());
+      ->condition('uid', $this->configuration['uid']);
 
     return $query->execute();
   }
