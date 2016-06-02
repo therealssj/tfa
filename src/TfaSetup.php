@@ -34,9 +34,8 @@ class TfaSetup {
    *       Account uid of user in TFA process.
    *
    */
-  public function __construct($plugin, array $context) {
+  public function __construct($plugin) {
     $this->setupPlugin = $plugin;
-    $this->context = $context;
 //    $this->context['plugins'] = $plugins;
   }
 
@@ -91,15 +90,4 @@ class TfaSetup {
     return $this->setupPlugin->submitSetupForm($form, $form_state);
   }
 
-  /**
-   *
-   * @return array
-   */
-  public function getContext() {
-    if (method_exists($this->setupPlugin, 'getPluginContext')) {
-      $pluginContext = $this->setupPlugin->getPluginContext();
-      $this->context['setup_context'] = $pluginContext;
-    }
-    return $this->context;
-  }
 }
