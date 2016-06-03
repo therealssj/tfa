@@ -5,6 +5,6 @@
     "license": "GPL-2.0+",
     "minimum-stability": "dev",
     "require": {
-        "christian-riesen/otp": "1.*r"
+        "christian-riesen/otp": "2.*"
     }
 }
