@@ -8,6 +8,7 @@
 namespace Drupal\tfa\Plugin;
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\user\UserDataInterface;
 
 /**
  * Interface TfaValidationInterface
@@ -42,6 +43,33 @@ interface TfaValidationInterface {
    * @return string[]
    */
   public function getFallbacks();
+
+  /**
+   * Store user data in key value pairs
+   *
+   * @param string $module
+   * @param array $data
+   * @return void
+   */
+  public function setUserData($module, array $data);
+
+  /**
+   * Fetch user data using the key and module name
+   *
+   * @param string $key
+   * @param string $module
+   * @return array User Data array
+   */
+  public function getUserData($key, $module);
+
+  /**
+   * Fetch user data using the key and module name
+   *
+   * @param string $key
+   * @param string $module
+   * @return array User Data array
+   */
+  public function deleteUserData($key, $module);
 
 
 }

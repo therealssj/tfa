@@ -28,7 +28,7 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
   public function __construct(array $context) {
     parent::__construct($context);
     // Set in settings.php.
-    $this->encryptionKey = \Drupal::config('tfa_basic.settings')->get('secret_key');
+    $this->encryptionKey = \Drupal::config('tfa.settings')->get('secret_key');
   }
 
   /**
