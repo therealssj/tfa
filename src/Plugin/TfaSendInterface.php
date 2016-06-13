@@ -1,14 +1,9 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\tfa\TfaSendInterface.
- */
-
 namespace Drupal\tfa\Plugin;
 
 /**
- * Interface TfaSendInterface
+ * Interface TfaSendInterface.
  *
  * Send plugins interact with the Tfa begin() process to communicate a code
  * during the start of the TFA process.
@@ -21,4 +16,5 @@ interface TfaSendInterface {
    * TFA process begin.
    */
   public function begin();
+
 }

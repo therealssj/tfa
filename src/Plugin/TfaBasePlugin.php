@@ -4,7 +4,7 @@ namespace Drupal\tfa\Plugin;
 
 use Drupal\Component\Plugin\PluginBase;
 use Drupal\Core\Form\FormStateInterface;
-
+use Drupal\user\UserDataInterface;
 
 /**
  * Base plugin class.
@@ -41,27 +41,25 @@ abstract class TfaBasePlugin extends PluginBase {
   protected $encryptionKey;
 
   /**
-   * Constructs a TfaPlugin object.
+   * Provides the user data service object.
    *
-   * @param array $context
-   *   Context of current TFA process.
-   *   An array of paths keyed by their corresponding namespaces.
-   *
-   *   Must include key:
-   *
-   *     - 'uid'
-   *       Account uid of user in TFA process.
-   *
-   *   May include keys:
-   *
-   *     - 'validate_context'
-   *       Plugin-specific context for use during Tfa validation.
-   *
-   *     - 'setup_context'
-   *       Plugin-specific context for use during TfaSetup.
-   *
+   * @var \Drupal\user\UserDataInterface
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition) {
+  protected $userData;
+
+  /**
+   * Constructs a new Tfa plugin object.
+   *
+   * @param array $configuration
+   *    The plugin configuration.
+   * @param string $plugin_id
+   *    The plugin id.
+   * @param mixed $plugin_definition
+   *    The plugin definition.
+   * @param \Drupal\user\UserDataInterface $user_data
+   *    User data object to store user specific information.
+   */
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, UserDataInterface $user_data) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     // Default code length is 6.
     $this->codeLength = 6;
@@ -72,10 +70,9 @@ abstract class TfaBasePlugin extends PluginBase {
    * Determine if the plugin can run for the current TFA context.
    *
    * @return bool
+   *    True or False based on the checks performed.
    */
-  public function ready() {
-    return TRUE;
-  }
+  abstract public function ready();
 
   /**
    * Get error messages suitable for form_set_error().
@@ -90,7 +87,10 @@ abstract class TfaBasePlugin extends PluginBase {
    * Submit form.
    *
    * @param array $form
-   * @param FormStateInterface $form_state
+   *   An associative array containing the structure of the form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   *
    * @return bool Whether plugin form handling is complete.
    *   Plugins should return FALSE to invoke multi-step.
    */
@@ -104,8 +104,11 @@ abstract class TfaBasePlugin extends PluginBase {
    * Note, plugins overriding validate() should be sure to set isValid property
    * correctly or else also override submitForm().
    *
-   * @param string $code Code to be validated
-   * @return bool Whether code is valid
+   * @param string $code
+   *   Code to be validated.
+   *
+   * @return bool
+   *    Whether code is valid.
    */
   protected function validate($code) {
     if ((string) $code === (string) $this->code) {
@@ -138,6 +141,7 @@ abstract class TfaBasePlugin extends PluginBase {
    * Should be used when writing codes to storage.
    *
    * @param string .
+   *
    * @return string
    */
   protected function encrypt($text) {
@@ -164,6 +168,7 @@ abstract class TfaBasePlugin extends PluginBase {
    * Should be used when reading codes from storage.
    *
    * @param string
+   *
    * @return string
    */
   protected function decrypt($data) {

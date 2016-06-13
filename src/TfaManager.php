@@ -1,8 +1,4 @@
 <?php
-/**
- * @file TfaManager
- * Contains the TfaManager service.
- */
 
 namespace Drupal\tfa;
 
@@ -12,7 +8,6 @@ use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\user\Entity\User;
-use Drupal\Component\Utility\Crypt;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
@@ -33,8 +28,7 @@ class TfaManager {
   /**
    * @var \Drupal\Core\Config\ConfigFactoryInterface
    */
-  //protected $configFactory;
-
+  // Protected $configFactory;.
   /**
    * @var \Drupal\Core\Session\AccountProxyInterface
    */
@@ -72,9 +66,9 @@ class TfaManager {
    * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
    * @param \Symfony\Component\HttpFoundation\Session\SessionInterface $session
    */
-  function __construct(ModuleHandlerInterface $module_handler, ConfigFactoryInterface $config_factory, AccountProxyInterface $current_user, EntityManagerInterface $entity_manager, SessionInterface $session, RequestStack $request_stack ) {
+  function __construct(ModuleHandlerInterface $module_handler, ConfigFactoryInterface $config_factory, AccountProxyInterface $current_user, EntityManagerInterface $entity_manager, SessionInterface $session, RequestStack $request_stack) {
     $this->moduleHander = $module_handler;
-    //$this->configFactory = $config_factory;
+    // $this->configFactory = $config_factory;.
     $this->currentUser = $current_user;
     $this->entityManager = $entity_manager;
     $this->session = $session;
@@ -83,23 +77,24 @@ class TfaManager {
 
   }
 
-
   /**
    * Get Tfa object in the account's current context.
    *
    * @param $account User account object
+   *
    * @return Tfa
+   *
    * @deprecated
    */
   public function getProcess($account) {
-    //$tfa = &drupal_static(__FUNCTION__);
+    // $tfa = &drupal_static(__FUNCTION__);
     if (!isset($this->tfa)) {
       $context = $this->getContext($account);
       if (empty($context['plugins'])) {
         $context = $this->startContext($account);
       }
       try {
-        // instansiate all plugins
+        // Instansiate all plugins.
         $this->tfa = new Tfa($context['plugins'], $context);
       }
       catch (\Exception $e) {
@@ -113,26 +108,29 @@ class TfaManager {
    * Context for account TFA process.
    *
    * @param User $account
+   *
    * @return array
+   *
    * @see _tfa_start_context() for format
+   *
    * @deprecated
    */
   public function getContext(User $account) {
     $context = array();
     $tfaSession = $this->request->getSession()->get('tfa');
-//    if (!empty($tfaSession[$account->id()])) {
-//      $context = $tfaSession[$account->id()];
-//    }
+    // If (!empty($tfaSession[$account->id()])) {
+    //      $context = $tfaSession[$account->id()];
+    //    }
     // Allow other modules to modify TFA context.
     $this->moduleHander->alter('tfa_context', $context);
     return $context;
   }
 
-
   /**
    * Start context for TFA.
    *
    * @param User $account
+   *
    * @return array
    *   array(
    *     'uid' => 9,
@@ -163,14 +161,14 @@ class TfaManager {
     }
 
     // Add login plugins.
-    //@TODO This won't work the way it is. Need to refactor like we did for validate plguins.
+    // @TODO This won't work the way it is. Need to refactor like we did for validate plguins.
     foreach ($plugins as $key) {
       if (array_key_exists($key, $api)) {
         $context['plugins']['login'][] = $api[$key]['class'];
       }
     }
     // Add validate.
-    //@TODO Figure out why D8 decided to allow multiple validate plugins.
+    // @TODO Figure out why D8 decided to allow multiple validate plugins.
     $validate = $this->tfaSettings->get('validate_plugins');
     foreach ($validate as $key => $value) {
       if (!empty($validate) && array_key_exists($key, $api)) {
@@ -194,8 +192,11 @@ class TfaManager {
    * Set context for account's TFA process.
    *
    * @param $account User account
-   * @param array $context Context array
+   * @param array $context
+   *   Context array
+   *
    * @see tfa_start_context() for context format
+   *
    * @deprecated
    */
   public function setContext($account, $context) {
@@ -205,10 +206,6 @@ class TfaManager {
     // Clear existing static TFA process.
     $this->tfa = NULL;
   }
-
-
-
-
 
   /**
    * Authenticate the user.
@@ -222,17 +219,18 @@ class TfaManager {
    * do the additional flood stuff.
    *
    * @param $account User account object.
+   *
    * @deprecated
    */
   public function login($account) {
-    //@todo Implement flood controls for the TFA login.
+    // @todo Implement flood controls for the TFA login.
 
     // Truncate flood for user.
-    //flood_clear_event('tfa_begin');
-    //$identifier = variable_get('user_failed_login_identifier_uid_only', FALSE) ? $account->uid : $account->uid . '-' . ip_address();
-    //flood_clear_event('tfa_user', $identifier);
-    //$edit = array();
-    //user_module_invoke('login', $edit, $user);
+    // flood_clear_event('tfa_begin');
+    // $identifier = variable_get('user_failed_login_identifier_uid_only', FALSE) ? $account->uid : $account->uid . '-' . ip_address();
+    // flood_clear_event('tfa_user', $identifier);
+    // $edit = array();
+    // user_module_invoke('login', $edit, $user);.
   }
 
   /**
@@ -240,22 +238,23 @@ class TfaManager {
    *
    * @param object $account
    *   User account object
+   *
    * @deprecated
    */
   public function clearContext($account) {
     unset($this->session->get('tfa')[$account->uid]);
   }
 
-
   /**
    * Validate access to TFA code entry form.
+   *
    * @deprecated
    */
   public function entryAccess($account, $url_hash) {
     // Generate a hash for this account.
-    //$hash = tfa_login_hash($account);
-    //$context = tfa_get_context($account);
-    //return $hash === $url_hash && !empty($context) && $context['uid'] === $account->uid;
+    // $hash = tfa_login_hash($account);
+    // $context = tfa_get_context($account);
+    // return $hash === $url_hash && !empty($context) && $context['uid'] === $account->uid;.
     return TRUE;
   }
 

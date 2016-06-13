@@ -1,17 +1,11 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\tfa\TfaValidationInterface.
- */
-
 namespace Drupal\tfa\Plugin;
 
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\user\UserDataInterface;
 
 /**
- * Interface TfaValidationInterface
+ * Interface TfaValidationInterface.
  *
  * Validation plugins interact with the Tfa form processes to provide code entry
  * and validate submitted codes.
@@ -45,10 +39,10 @@ interface TfaValidationInterface {
   public function getFallbacks();
 
   /**
-   * Store user specific information
+   * Store user specific information.
    *
    * @param string $module
-   *    The name of the module the data is associated with.
+   *   The name of the module the data is associated with.
    * @param array $data
    *   The value to store. Non-scalar values are serialized automatically.
    *
@@ -57,7 +51,7 @@ interface TfaValidationInterface {
   public function setUserData($module, array $data);
 
   /**
-   * Returns data stored for the current validated user account
+   * Returns data stored for the current validated user account.
    *
    * @param string $module
    *   The name of the module the data is associated with.
@@ -70,7 +64,7 @@ interface TfaValidationInterface {
   public function getUserData($key, $module);
 
   /**
-   * Deletes data stored for the current validated user account
+   * Deletes data stored for the current validated user account.
    *
    * @param string $module
    *   The name of the module the data is associated with.
@@ -80,6 +74,5 @@ interface TfaValidationInterface {
    * @return void
    */
   public function deleteUserData($key, $module);
-
 
 }

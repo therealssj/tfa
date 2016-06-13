@@ -1,25 +1,20 @@
 <?php
 
-/**
- * @file TfaHOTP class
- */
-
 namespace Drupal\tfa\Plugin\TfaValidation;
 
 use Base32\Base32;
-use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Site\Settings;
-use Drupal\user\UserDataInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\tfa\Plugin\TfaBasePlugin;
 use Drupal\tfa\Plugin\TfaValidationInterface;
 use Otp\GoogleAuthenticator;
 use Otp\Otp;
-use Drupal\Core\DependencyInjection\DependencySerializationTrait;
-
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
+ * Defines the meta-data for the validation.
+ *
  * @TfaValidation(
  *   id = "tfa_hotp",
  *   label = @Translation("TFA Hotp"),
@@ -33,6 +28,8 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
   use DependencySerializationTrait;
 
   /**
+   * Object containing the external validation library.
+   *
    * @var GoogleAuthenticator
    */
   protected $auth;
@@ -55,17 +52,17 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
   protected $alreadyAccepted;
 
   /**
-   * @copydoc TfaBasePlugin::__construct()
+   * {@inheritdoc}
    */
   public function __construct(array $configuration, $plugin_id, $plugin_definition, UserDataInterface $user_data) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition);
-    $this->auth = new \StdClass();
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $user_data);
+    $this->auth      = new \StdClass();
     $this->auth->otp = new Otp();
     $this->auth->ga  = new GoogleAuthenticator();
     // Allow codes within tolerance range of 3 * 30 second units.
     $this->timeSkew = \Drupal::config('tfa.settings')->get('time_skew');
     // Recommended: set variable tfa_totp_secret_key in settings.php.
-    $this->encryptionKey = \Drupal::config('tfa.settings')->get('secret_key');
+    $this->encryptionKey   = \Drupal::config('tfa.settings')->get('secret_key');
     $this->alreadyAccepted = FALSE;
 
     $this->userData = $user_data;
@@ -84,26 +81,26 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
   }
 
   /**
-   * @copydoc TfaBasePlugin::ready()
+   * {@inheritdoc}
    */
   public function ready() {
     return ($this->getSeed() !== FALSE);
   }
 
   /**
-   * @copydoc TfaValidationPluginInterface::getForm()
+   * {@inheritdoc}
    */
   public function getForm(array $form, FormStateInterface $form_state) {
-    $form['code'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Application verification code'),
+    $form['code']             = array(
+      '#type'        => 'textfield',
+      '#title'       => t('Application verification code'),
       '#description' => t('Verification code is application generated and @length digits long.', array('@length' => $this->codeLength)),
-      '#required' => TRUE,
-      '#attributes' => array('autocomplete' => 'off'),
+      '#required'    => TRUE,
+      '#attributes'  => array('autocomplete' => 'off'),
     );
     $form['actions']['#type'] = 'actions';
     $form['actions']['login'] = array(
-      '#type' => 'submit',
+      '#type'  => 'submit',
       '#value' => t('Verify'),
     );
 
@@ -111,11 +108,11 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
   }
 
   /**
-   * @copydoc TfaValidationPluginInterface::validateForm()
+   * {@inheritdoc}
    */
   public function validateForm(array $form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
-    //dpm($values);
+    // dpm($values);
     if (!$this->validate($values['code'])) {
       $form_state->setErrorByName('code', t('Invalid application code. Please try again.'));
       if ($this->alreadyAccepted) {
@@ -129,7 +126,7 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
   }
 
   /**
-   * @copydoc TfaBasePlugin::validate()
+   * {@inheritdoc}
    */
   protected function validate($code) {
     // Strip whitespace.
@@ -139,8 +136,8 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
     }
     else {
       // Get OTP seed.
-      $seed = $this->getSeed();
-      $counter = $this->getHOTPCounter();
+      $seed          = $this->getSeed();
+      $counter       = $this->gethotpCounter();
       $this->isValid = ($seed && ($counter = $this->auth->otp->checkHotpResync(Base32::decode($seed), ++$counter, $code)));
       $this->setUserData('tfa', ['tfa_hotp_counter' => $counter]);
     }
@@ -148,29 +145,35 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
   }
 
   /**
+   * Store validated code to prevent replay attack.
+   *
    * @param string $code
+   *    The validated code.
    */
   protected function storeAcceptedCode($code) {
     $code = preg_replace('/\s+/', '', $code);
     $hash = hash('sha1', Settings::getHashSalt() . $code);
 
-    //Store the hash made using the code in users_data
+    // Store the hash made using the code in users_data.
     // @todo Use the request time to say something like 'code was requested at ..'?
-    $store_data = ['tfa_accepted_code_' . $hash =>  REQUEST_TIME];
+    $store_data = ['tfa_accepted_code_' . $hash => REQUEST_TIME];
     $this->setUserData('tfa', $store_data);
   }
 
   /**
-   * Whether code has recently been accepted.
+   * Whether code has already been used.
    *
    * @param string $code
+   *    The code to be checked.
+   *
    * @return bool
+   *    TRUE if already used otherwise FALSE
    */
   protected function alreadyAcceptedCode($code) {
-    $hash   = hash('sha1', Settings::getHashSalt() . $code);
+    $hash = hash('sha1', Settings::getHashSalt() . $code);
 
-    //Check if the code has already been used or not.
-    $key = 'tfa_accepted_code_' . $hash;
+    // Check if the code has already been used or not.
+    $key    = 'tfa_accepted_code_' . $hash;
     $result = $this->getUserData('tfa', $key);
 
     if (!empty($result)) {
@@ -184,16 +187,17 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
   /**
    * Get seed for this account.
    *
-   * @return string Decrypted account OTP seed or FALSE if none exists.
+   * @return string
+   *    Decrypted account OTP seed or FALSE if none exists.
    */
   protected function getSeed() {
     // Lookup seed for account and decrypt.
-    $uid =  $this->configuration['uid'];
+    $uid    = $this->configuration['uid'];
     $result = $this->getUserData('tfa', 'tfa_hotp_seed');
 
     if (!empty($result)) {
       $encrypted = Base32::decode($result['seed']);
-      $seed = $this->decrypt($encrypted);
+      $seed      = $this->decrypt($encrypted);
       if (!empty($seed)) {
         return $seed;
       }
@@ -202,9 +206,7 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
   }
 
   /**
-   * Delete users seeds.
-   *
-   * @return int
+   * Delete the seed of the current validated user.
    */
   public function deleteSeed() {
     $this->deleteUserData('tfa', 'tfa_hotp_seed');
@@ -213,13 +215,13 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
   /**
    * {@inheritdoc}
    */
-  public function getFallbacks(){
+  public function getFallbacks() {
     return ($this->pluginDefinition['fallbacks']) ?: '';
   }
 
- /**
-  * {@inheritdoc}
-  */
+  /**
+   * {@inheritdoc}
+   */
   public function setUserData($module, array $data) {
     $this->userData->set(
       $module,
@@ -245,7 +247,7 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
   /**
    * {@inheritdoc}
    */
-  public function deleteUserData($module, $key){
+  public function deleteUserData($module, $key) {
     $this->userData->delete(
       $module,
       $this->configuration['uid'],
@@ -257,7 +259,7 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
    * @return int
    *   The current value of the HOTP counter, or 1 if no value was found
    */
-  public function getHOTPCounter(){
+  public function gethotpCounter() {
     $result = ($this->getUserData('tfa', 'tfa_hotp_counter')) ?: 1;
 
     return $result;

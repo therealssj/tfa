@@ -1,6 +1,15 @@
 <?php
+
+/**
+ * @file
+ */
+
 /**
  * Implements hook_install().
+ */
+
+/**
+ *
  */
 function tfa_install() {
   // Set default values.

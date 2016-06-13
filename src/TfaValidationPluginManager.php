@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains Drupal\tfa\TfaValidationPluginManager.
- */
 
 namespace Drupal\tfa;
 
@@ -13,6 +9,9 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Plugin\DefaultPluginManager;
 use Drupal\user\UserDataInterface;
 
+/**
+ *
+ */
 class TfaValidationPluginManager extends DefaultPluginManager {
 
   /**
@@ -45,8 +44,10 @@ class TfaValidationPluginManager extends DefaultPluginManager {
 
   /**
    * Create an instance of a plugin.
+   *
    * @param string $plugin_id
    * @param array $configuration
+   *
    * @return object
    */
   public function createInstance($plugin_id, array $configuration = array()) {
@@ -65,11 +66,11 @@ class TfaValidationPluginManager extends DefaultPluginManager {
   }
 
   /**
-   *
    * Options here should be what we need to send in - ie. Account.
    * The plugin manager should handle determining what plugin is required.
    *
    * @param array $options
+   *
    * @return false|object
    */
   public function getInstance(array $options) {

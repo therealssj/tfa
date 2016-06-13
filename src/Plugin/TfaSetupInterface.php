@@ -1,16 +1,11 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\tfa\TfaSetupInterface.
- */
-
 namespace Drupal\tfa\Plugin;
 
 use Drupal\Core\Form\FormStateInterface;
 
 /**
- * Interface TfaSetupInterface
+ * Interface TfaSetupInterface.
  *
  * Setup plugins are used by TfaSetup for configuring a plugin.
  *
@@ -39,6 +34,7 @@ interface TfaSetupInterface {
 
   /**
    * Returns a list of links containing helpful information for plugin use.
+   *
    * @return string[]
    */
   public function getHelpLinks();

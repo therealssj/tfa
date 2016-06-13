@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains Drupal\tfa\TfaSetupPluginManager.
- */
 
 namespace Drupal\tfa;
 
@@ -10,8 +6,11 @@ use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Plugin\DefaultPluginManager;
 
-
+/**
+ *
+ */
 class TfaSetupPluginManager extends DefaultPluginManager {
+
   /**
    * Constructs a new TfaSetup plugin manager.
    *
@@ -28,4 +27,5 @@ class TfaSetupPluginManager extends DefaultPluginManager {
     $this->alterInfo('tfa_setup_info');
     $this->setCacheBackend($cache_backend, 'tfa_setup');
   }
+
 }

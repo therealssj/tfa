@@ -1,21 +1,14 @@
 <?php
 
-/**
- * @file TFA module classes
- * Contains \Drupal\tfa\Tfa.
- */
-
 namespace Drupal\tfa;
 
 use Drupal\Component\Utility\SafeMarkup;
-use Drupal\tfa\Plugin\TfaBasePlugin;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
- * Class Tfa
+ * Class Tfa.
  *
  * Defines a TFA object.
- *
  */
 class Tfa {
 
@@ -75,7 +68,6 @@ class Tfa {
    *
    *     - 'uid'
    *       Account uid of user in TFA process.
-   *
    */
   public function __construct(array $plugins, array $context) {
     if (empty($plugins)) {
@@ -89,25 +81,26 @@ class Tfa {
           array('@function' => 'Tfa::__construct')));
     }
 
-    //Load up the current validation plugin.
+    // Load up the current validation plugin.
     $validation_service = \Drupal::service('plugin.manager.tfa.validation');
     $validate_plugin = $validation_service->getDefinition($plugins['validate']);
     $this->validatePlugin = new $validate_plugin['class']($context);
 
-    //Check for login plugins (Shou'd this really be a loop?)
+    // Check for login plugins (Shou'd this really be a loop?)
     if (!empty($plugins['login'])) {
       foreach ($plugins['login'] as $class) {
         $this->loginPlugins[] = new $class($context);
       }
     }
-    //Check for fallback plugins
+    // Check for fallback plugins.
     if (!empty($plugins['fallback'])) {
       $plugins['fallback'] = array_unique($plugins['fallback']);
       // @todo consider making plugin->ready a class method?
       foreach ($plugins['fallback'] as $key => $class) {
         if ($class === $plugins['validate']) {
           unset($plugins['fallback'][$key]);
-          continue; // Skip this fallback if its same as validation.
+          // Skip this fallback if its same as validation.
+          continue;
         }
         $fallback = new $class($context);
         // Only plugins that are ready can stay.
@@ -126,15 +119,14 @@ class Tfa {
     $this->context['plugins'] = $plugins;
   }
 
-
-
-
   /**
    * Get TFA process form from plugin.
    *
    * @param array $form
    * @param FormStateInterface $form_state
+   *
    * @return array Form API array.
+   *
    * @deprecated
    */
   public function getForm(array $form, FormStateInterface $form_state) {
@@ -154,7 +146,9 @@ class Tfa {
    * Checks if user is allowed to continue with plugin action.
    *
    * @param string $window
+   *
    * @return bool
+   *
    * @deprecated
    */
   public function floodIsAllowed($window = '') {
@@ -164,11 +158,11 @@ class Tfa {
     return TRUE;
   }
 
-
   /**
    * Return process error messages.
    *
    * @return array
+   *
    * @deprecated
    */
   public function getErrorMessages() {
@@ -183,8 +177,10 @@ class Tfa {
    *
    * @param array $form
    * @param FormStateInterface $form_state
+   *
    * @return bool Whether the validate plugin is complete.
    *   FALSE will cause tfa_form_submit() to rebuild the form for multi-step.
+   *
    * @deprecated
    */
   public function submitForm(array $form, FormStateInterface $form_state) {
@@ -217,11 +213,11 @@ class Tfa {
     return $this->complete;
   }
 
-
   /**
    * Whether the TFA process has any fallback proceses.
    *
    * @return bool
+   *
    * @deprecated
    */
   public function hasFallback() {
@@ -232,6 +228,7 @@ class Tfa {
    * Return TFA context.
    *
    * @return array
+   *
    * @deprecated
    */
   public function getContext() {
@@ -244,6 +241,7 @@ class Tfa {
 
   /**
    * Run TFA process finalization.
+   *
    * @deprecated
    */
   public function finalize() {

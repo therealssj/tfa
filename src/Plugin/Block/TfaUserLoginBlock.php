@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\tfa\Plugin\Block\TfaUserLoginBlock.
- */
-
 namespace Drupal\tfa\Plugin\Block;
 
 use Drupal\Core\Access\AccessResult;
@@ -24,7 +19,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   category = @Translation("Forms")
  * )
  */
-class TfaUserLoginBlock extends UserLoginBlock  {
+class TfaUserLoginBlock extends UserLoginBlock {
 
 
   /**
@@ -57,7 +52,6 @@ class TfaUserLoginBlock extends UserLoginBlock  {
     );
   }
 
-
   /**
    * {@inheritdoc}
    */
@@ -67,7 +61,7 @@ class TfaUserLoginBlock extends UserLoginBlock  {
 
     $route_name = $this->routeMatch->getRouteName();
     $disabled_route = in_array($route_name, array('tfa.entry'));
-    if($access->isForbidden() || !$tfaAccess || $disabled_route){
+    if ($access->isForbidden() || !$tfaAccess || $disabled_route) {
       return AccessResult::forbidden();
     }
     return $access;
@@ -80,15 +74,14 @@ class TfaUserLoginBlock extends UserLoginBlock  {
    * {@inheritdoc}
    */
   public function build() {
-    //Get the default build info.
+    // Get the default build info.
     $form = \Drupal::formBuilder()->getForm('Drupal\tfa\Form\TfaLoginForm');
     unset($form['name']['#attributes']['autofocus']);
     unset($form['name']['#description']);
     unset($form['pass']['#description']);
     $form['name']['#size'] = 15;
     $form['pass']['#size'] = 15;
-    //$form['#action'] = $this->url('<current>', [], ['query' => $this->getDestinationArray(), 'external' => FALSE]);
-
+    // $form['#action'] = $this->url('<current>', [], ['query' => $this->getDestinationArray(), 'external' => FALSE]);
     // Build action links.
     $items = array();
     if (\Drupal::config('user.settings')->get('register') != USER_REGISTER_ADMINISTRATORS_ONLY) {
@@ -113,7 +106,5 @@ class TfaUserLoginBlock extends UserLoginBlock  {
       ),
     );
   }
-
-
 
 }

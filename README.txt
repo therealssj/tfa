@@ -53,5 +53,3 @@ the active plugin.
 
 #### Getting started
 TODO
-
-

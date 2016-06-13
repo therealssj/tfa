@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\tfa\Form\SettingsForm.
- */
-
 namespace Drupal\tfa\Form;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -16,6 +11,9 @@ use Drupal\tfa\TfaSetupPluginManager;
 use Drupal\tfa\TfaValidationPluginManager;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
+/**
+ *
+ */
 class SettingsForm extends ConfigFormBase {
 
 
@@ -41,6 +39,9 @@ class SettingsForm extends ConfigFormBase {
    */
   protected $tfaSetup;
 
+  /**
+   *
+   */
   public function __construct(ConfigFactoryInterface $config_factory, TfaLoginPluginManager $tfa_login, TfaSendPluginManager $tfa_send, TfaValidationPluginManager $tfa_validation, TfaSetupPluginManager $tfa_setup) {
     parent::__construct($config_factory);
     $this->tfaLogin = $tfa_login;
@@ -49,8 +50,10 @@ class SettingsForm extends ConfigFormBase {
     $this->tfaValidation = $tfa_validation;
   }
 
-
-  public static function create(ContainerInterface $container){
+  /**
+   *
+   */
+  public static function create(ContainerInterface $container) {
     return new static(
       $container->get('config.factory'),
       $container->get('plugin.manager.tfa.login'),
@@ -59,7 +62,6 @@ class SettingsForm extends ConfigFormBase {
       $container->get('plugin.manager.tfa.setup')
     );
   }
-
 
   /**
    * {@inheritdoc}
@@ -75,43 +77,42 @@ class SettingsForm extends ConfigFormBase {
     $config = $this->config('tfa.settings');
     $form = array();
 
-    //TODO - Wondering if all modules extend TfaBasePlugin
-    //Get Login Plugins
+    // TODO - Wondering if all modules extend TfaBasePlugin
+    // Get Login Plugins.
     $login_plugins = $this->tfaLogin->getDefinitions();
 
-    //Get Send Plugins
+    // Get Send Plugins.
     $send_plugins = $this->tfaSend->getDefinitions();
 
-    //Get Validation Plugins
+    // Get Validation Plugins.
     $validate_plugins = $this->tfaValidation->getDefinitions();
 
-    // Get validation plugin labels and their fallbacks
+    // Get validation plugin labels and their fallbacks.
     $validate_plugins_labels = [];
     $validate_plugins_fallbacks = [];
-    foreach($validate_plugins as $plugin){
-      $validate_plugins_labels[ $plugin['id'] ] = $plugin['label']->render();
-      $validate_plugins_fallbacks[ $plugin['id'] ] = $plugin['fallbacks'];
+    foreach ($validate_plugins as $plugin) {
+      $validate_plugins_labels[$plugin['id']] = $plugin['label']->render();
+      $validate_plugins_fallbacks[$plugin['id']] = $plugin['fallbacks'];
     }
 
-
-    //Get Setup Plugins
+    // Get Setup Plugins.
     $setup_plugins = $this->tfaSetup->getDefinitions();
 
     // Check if mcrypt plugin is available.
     /*
     if (!extension_loaded('mcrypt')) {
-      // @todo allow alter in case of other encryption libs.
-      drupal_set_message(t('The TFA module requires the PHP Mcrypt extension be installed on the web server. See <a href="!link">the TFA help documentation</a> for setup.', array('!link' => \Drupal\Core\Url::fromRoute('help.page'))), 'error');
+    // @todo allow alter in case of other encryption libs.
+    drupal_set_message(t('The TFA module requires the PHP Mcrypt extension be installed on the web server. See <a href="!link">the TFA help documentation</a> for setup.', array('!link' => \Drupal\Core\Url::fromRoute('help.page'))), 'error');
 
-      return parent::buildForm($form, $form_state);;
+    return parent::buildForm($form, $form_state);;
     }
-    */
+     */
 
     // Return if there are no plugins.
-    //TODO - Why check for plugins here?
-    //if (empty($plugins) || empty($validate_plugins)) {
+    // TODO - Why check for plugins here?
+    // if (empty($plugins) || empty($validate_plugins)) {.
     if (empty($validate_plugins)) {
-      //drupal_set_message(t('No plugins available for validation. See <a href="!link">the TFA help documentation</a> for setup.', array('!link' => \Drupal\Core\Url::fromRoute('help.page'))), 'error');
+      // drupal_set_message(t('No plugins available for validation. See <a href="!link">the TFA help documentation</a> for setup.', array('!link' => \Drupal\Core\Url::fromRoute('help.page'))), 'error');.
       drupal_set_message(t('No plugins available for validation. See the TFA help documentation for setup.'), 'error');
       return parent::buildForm($form, $form_state);
     }
@@ -124,18 +125,20 @@ class SettingsForm extends ConfigFormBase {
       '#description' => t('Enable TFA for account authentication.'),
     );
 
-    $enabled_state = array('visible' => array(
-      ':input[name="tfa_enabled"]' => array('checked' => TRUE))
+    $enabled_state = array(
+      'visible' => array(
+        ':input[name="tfa_enabled"]' => array('checked' => TRUE),
+      ),
     );
 
     if (count($validate_plugins)) {
       $form['tfa_validate'] = array(
         '#type' => 'select',
         '#title' => t('Default validation plugin'),
-        '#options' =>  $validate_plugins_labels,
+        '#options' => $validate_plugins_labels,
         '#default_value' => \Drupal::config('tfa.settings')->get('validate_plugin'),
         '#description' => t('Plugin that will be used as the default TFA process.'),
-        //Show only when TFA is enabled
+        // Show only when TFA is enabled.
         '#states' => $enabled_state,
       );
     }
@@ -146,7 +149,7 @@ class SettingsForm extends ConfigFormBase {
       );
     }
 
-    if(count($validate_plugins_fallbacks)){
+    if (count($validate_plugins_fallbacks)) {
       $form['tfa_fallback'] = array(
         '#type' => 'fieldset',
         '#title' => t('Validation fallback plugins'),
@@ -159,10 +162,10 @@ class SettingsForm extends ConfigFormBase {
       foreach ($validate_plugins_fallbacks as $plugin => $fallbacks) {
         $fallback_state  = array(
           'visible' => array(
-            ':input[name="tfa_validate"]' => array('value' => $plugin)
-          )
+            ':input[name="tfa_validate"]' => array('value' => $plugin),
+          ),
         );
-        if(count($fallbacks)) {
+        if (count($fallbacks)) {
           foreach ($fallbacks as $fallback) {
             $order = (@$enabled_fallback_plugins[$plugin][$fallback]['weight']) ?: -2;
             $fallback_value = (@$enabled_fallback_plugins[$plugin][$fallback]['enable']) ?: 1;
@@ -183,8 +186,9 @@ class SettingsForm extends ConfigFormBase {
               ),
             );
           }
-        }else{
-          $form['tfa_fallback'][$plugin]= array(
+        }
+        else {
+          $form['tfa_fallback'][$plugin] = array(
             '#type' => 'item',
             '#description' => t('No fallback plugins available.'),
             '#states'        => $fallback_state,
@@ -192,7 +196,6 @@ class SettingsForm extends ConfigFormBase {
         }
       }
     }
-
 
     // Enable login plugins.
     if (count($login_plugins)) {
@@ -228,7 +231,7 @@ class SettingsForm extends ConfigFormBase {
         '#title' => t('Send plugins'),
         '#options' => $send_form_array,
         '#default_value' => ($config->get('send_plugins')) ? $config->get('send_plugins') : array(),
-        //TODO - Fill in description
+        // TODO - Fill in description.
         '#description' => t('Not sure what this is'),
       );
     }
@@ -248,7 +251,7 @@ class SettingsForm extends ConfigFormBase {
         '#title' => t('Setup plugins'),
         '#options' => $setup_form_array,
         '#default_value' => ($config->get('setup_plugins')) ? $config->get('setup_plugins') : array(),
-        //TODO - Fill in description
+        // TODO - Fill in description.
         '#description' => t('Not sure what this is'),
       );
     }
@@ -270,7 +273,6 @@ class SettingsForm extends ConfigFormBase {
     $validate_plugin = $form_state->getValue('tfa_validate');
     $fallback_plugins = $form_state->getValue('tfa_fallback');
 
-
     $this->config('tfa.settings')
       ->set('enabled', $form_state->getValue('tfa_enabled'))
       ->set('setup_plugins', array_filter($form_state->getValue('tfa_setup')))
@@ -282,7 +284,6 @@ class SettingsForm extends ConfigFormBase {
 
     parent::submitForm($form, $form_state);
   }
-
 
   /**
    * {@inheritdoc}

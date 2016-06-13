@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\tfa\Annotation\TfaSetup
- */
-
 namespace Drupal\tfa\Annotation;
 
 use Drupal\Component\Annotation\Plugin;
@@ -42,11 +37,10 @@ class TfaSetup extends Plugin {
   public $description;
 
   /**
-   * The helper metadata for setup plugin
+   * The helper metadata for setup plugin.
    *
    * @var string[]
    */
   public $help_links;
-
 
 }
