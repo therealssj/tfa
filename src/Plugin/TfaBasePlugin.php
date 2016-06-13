@@ -5,11 +5,11 @@ namespace Drupal\tfa\Plugin;
 use Drupal\Component\Plugin\PluginBase;
 use Drupal\Core\Form\FormStateInterface;
 
+
 /**
  * Base plugin class.
  */
 abstract class TfaBasePlugin extends PluginBase {
-
   /**
    * @var string
    */

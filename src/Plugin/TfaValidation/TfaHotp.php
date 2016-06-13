@@ -18,6 +18,7 @@ use Otp\GoogleAuthenticator;
 use Otp\Otp;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 
+
 /**
  * @TfaValidation(
  *   id = "tfa_hotp",
@@ -140,7 +141,7 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
       // Get OTP seed.
       $seed = $this->getSeed();
       $counter = $this->getHOTPCounter();
-      $this->isValid = ($seed && $this->auth->otp->checkHotp(Base32::decode($seed), ++$counter, $code));
+      $this->isValid = ($seed && ($counter = $this->auth->otp->checkHotpResync(Base32::decode($seed), ++$counter, $code)));
       $this->setUserData('tfa', ['tfa_hotp_counter' => $counter]);
     }
     return $this->isValid;

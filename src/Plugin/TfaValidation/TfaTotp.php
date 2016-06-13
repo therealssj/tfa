@@ -30,7 +30,6 @@ use Drupal\Core\DependencyInjection\DependencySerializationTrait;
  */
 class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
   use DependencySerializationTrait;
-
   /**
    * @var GoogleAuthenticator
    */
