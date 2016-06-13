@@ -39,35 +39,45 @@ interface TfaValidationInterface {
   public function validateForm(array $form, FormStateInterface $form_state);
 
   /**
-   * Returns a list of fallback methods available for this validation
    * @return string[]
+   *   Returns a list of fallback methods available for the current validation
    */
   public function getFallbacks();
 
   /**
-   * Store user data in key value pairs
+   * Store user specific information
    *
    * @param string $module
+   *    The name of the module the data is associated with.
    * @param array $data
+   *   The value to store. Non-scalar values are serialized automatically.
+   *
    * @return void
    */
   public function setUserData($module, array $data);
 
   /**
-   * Fetch user data using the key and module name
+   * Returns data stored for the current validated user account
    *
-   * @param string $key
    * @param string $module
-   * @return array User Data array
+   *   The name of the module the data is associated with.
+   * @param string $key
+   *   The name of the data key.
+   *
+   * @return mixed|array
+   *   the stored value is returned, or NULL if no value was found.
    */
   public function getUserData($key, $module);
 
   /**
-   * Fetch user data using the key and module name
+   * Deletes data stored for the current validated user account
    *
-   * @param string $key
    * @param string $module
-   * @return array User Data array
+   *   The name of the module the data is associated with.
+   * @param string $key
+   *   The name of the data key.
+   *
+   * @return void
    */
   public function deleteUserData($key, $module);
 

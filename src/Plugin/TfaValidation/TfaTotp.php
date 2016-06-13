@@ -208,10 +208,16 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
     $this->deleteUserData('tfa', 'tfa_totp_seed');
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getFallbacks() {
     return ($this->pluginDefinition['fallbacks']) ?: '';
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function setUserData($module, array $data) {
     $this->userData->set(
       $module,
@@ -221,6 +227,9 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
     );
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getUserData($module, $key) {
     $result = $this->userData->get(
       $module,
@@ -231,6 +240,9 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
     return $result;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function deleteUserData($module, $key){
     $this->userData->delete(
       $module,
