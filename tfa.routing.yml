@@ -25,3 +25,25 @@ tfa.login:
     _user_is_logged_in: 'FALSE'
   options:
     _maintenance_access: TRUE
+tfa.overview:
+  path: 'user/{user}/security/tfa'
+  defaults:
+    _form: 'Drupal\tfa\Form\BasicOverview'
+    _title: 'Security'
+  requirements:
+    _permission: 'setup own tfa'
+tfa.validation.setup:
+  path: 'user/{user}/security/tfa/{method}'
+  defaults:
+    _form: 'Drupal\tfa\Form\BasicSetup'
+    _title: 'TFA setup'
+  requirements:
+    _permission: 'setup own tfa'
+tfa.disable:
+  path: 'user/{user}/security/tfa/disable'
+  defaults:
+    _form: 'Drupal\tfa\Form\BasicDisable'
+    _title: 'TFA disable'
+  requirements:
+    _permission: 'setup own tfa'
+    user: \d+

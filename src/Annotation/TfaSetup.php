@@ -41,6 +41,6 @@ class TfaSetup extends Plugin {
    *
    * @var string[]
    */
-  public $help_links;
+  public $helpLinks;
 
 }

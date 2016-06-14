@@ -10,21 +10,52 @@ use Drupal\tfa\TfaValidationPluginManager;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- *
+ * TFA entry form.
  */
 class EntryForm extends FormBase {
 
   /**
-   * @var \Drupal\tfa\TfaManager
+   * Validation plugin manager.
+   *
+   * @var \Drupal\tfa\TfaValidationPluginManager
    */
   protected $tfaValidationManager;
+
+  /**
+   * Login plugin manager.
+   *
+   * @var \Drupal\tfa\TfaLoginPluginManager
+   */
   protected $tfaLoginManager;
+
+  /**
+   * The validation plugin object.
+   *
+   * @var \Drupal\tfa\Plugin\TfaValidationInterface
+   */
   protected $tfaValidationPlugin;
+
+  /**
+   * The login plugins.
+   *
+   * @var \Drupal\tfa\Plugin\TfaLoginInterface
+   */
   protected $tfaLoginPlugins;
+
+  /**
+   * The fallback plugin object.
+   *
+   * @var \Drupal\tfa\Plugin\TfaValidationInterface
+   */
   protected $tfaFallbackPlugin;
 
   /**
+   * EntryForm constructor.
    *
+   * @param \Drupal\tfa\TfaValidationPluginManager $tfa_validation_manager
+   *   Plugin manager for validation plugins.
+   * @param \Drupal\tfa\TfaLoginPluginManager $tfa_login_manager
+   *   Plugin manager for login plugins.
    */
   public function __construct(TfaValidationPluginManager $tfa_validation_manager, TfaLoginPluginManager $tfa_login_manager) {
     $this->tfaValidationManager = $tfa_validation_manager;
@@ -32,7 +63,12 @@ class EntryForm extends FormBase {
   }
 
   /**
+   * Creates service objects for the class contructor.
    *
+   * @param \Symfony\Component\DependencyInjection\ContainerInterface $container
+   *   The container to get the required services.
+   *
+   * @return static
    */
   public static function create(ContainerInterface $container) {
     return new static(
@@ -44,7 +80,7 @@ class EntryForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormID() {
+  public function getFormId() {
     return 'tfa_entry_form';
   }
 
@@ -95,7 +131,16 @@ class EntryForm extends FormBase {
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    $this->tfaValidationPlugin->validateForm($form, $form_state);
+    $validated = $this->tfaValidationPlugin->validateForm($form, $form_state);
+    if (!$validated && $fallback = $this->tfaValidationPlugin->getFallbacks()) {
+      $values = $form_state->getValues();
+      $fallback_plugin = $this->tfaValidationManager->createInstance($fallback[0], ['uid' => $values['account']->id()]);
+      $form_state->clearErrors();
+      if (!$fallback_plugin->validate($values['code'])) {
+        $errors = $fallback_plugin->getErrorMessages();
+        $form_state->setErrorByName(key($errors), current($errors));
+      }
+    }
     if (!empty($this->tfaLoginPlugins)) {
       foreach ($this->tfaLoginPlugins as $login_plugin) {
         if (method_exists($login_plugin, 'validateForm')) {

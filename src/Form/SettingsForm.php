@@ -12,46 +12,63 @@ use Drupal\tfa\TfaValidationPluginManager;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- *
+ * The admin configuration page.
  */
 class SettingsForm extends ConfigFormBase {
 
-
   /**
-   * @var
+   * The config factory object.
+   *
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
    */
   protected $configFactory;
 
   /**
+   * The login plugin manager to fetch plugin information.
+   *
    * @var \Drupal\tfa\TfaLoginPluginManager
    */
   protected $tfaLogin;
+
   /**
+   * The send plugin manager to fetch plugin information.
+   *
    * @var \Drupal\tfa\TfaSendPluginManager
    */
   protected $tfaSend;
+
   /**
+   * The validation plugin manager to fetch plugin information.
+   *
    * @var \Drupal\tfa\TfaValidationPluginManager
    */
   protected $tfaValidation;
+
   /**
+   * The setup plugin manager to fetch plugin information.
+   *
    * @var \Drupal\tfa\TfaSetupPluginManager
    */
   protected $tfaSetup;
 
   /**
-   *
+   * The admin configuraiton form constructor.
    */
   public function __construct(ConfigFactoryInterface $config_factory, TfaLoginPluginManager $tfa_login, TfaSendPluginManager $tfa_send, TfaValidationPluginManager $tfa_validation, TfaSetupPluginManager $tfa_setup) {
     parent::__construct($config_factory);
-    $this->tfaLogin = $tfa_login;
-    $this->tfaSend = $tfa_send;
-    $this->tfaSetup = $tfa_setup;
+    $this->tfaLogin      = $tfa_login;
+    $this->tfaSend       = $tfa_send;
+    $this->tfaSetup      = $tfa_setup;
     $this->tfaValidation = $tfa_validation;
   }
 
   /**
+   * Creates service objects for the class contructor.
    *
+   * @param \Symfony\Component\DependencyInjection\ContainerInterface $container
+   *   The container to get the required services.
+   *
+   * @return static
    */
   public static function create(ContainerInterface $container) {
     return new static(
@@ -66,7 +83,7 @@ class SettingsForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormID() {
+  public function getFormId() {
     return 'tfa_settings_form';
   }
 
@@ -75,7 +92,7 @@ class SettingsForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config('tfa.settings');
-    $form = array();
+    $form   = array();
 
     // TODO - Wondering if all modules extend TfaBasePlugin
     // Get Login Plugins.
@@ -88,10 +105,10 @@ class SettingsForm extends ConfigFormBase {
     $validate_plugins = $this->tfaValidation->getDefinitions();
 
     // Get validation plugin labels and their fallbacks.
-    $validate_plugins_labels = [];
+    $validate_plugins_labels    = [];
     $validate_plugins_fallbacks = [];
     foreach ($validate_plugins as $plugin) {
-      $validate_plugins_labels[$plugin['id']] = $plugin['label']->render();
+      $validate_plugins_labels[$plugin['id']]    = $plugin['label']->render();
       $validate_plugins_fallbacks[$plugin['id']] = $plugin['fallbacks'];
     }
 
@@ -119,10 +136,10 @@ class SettingsForm extends ConfigFormBase {
 
     // Option to enable entire process or not.
     $form['tfa_enabled'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Enable TFA'),
+      '#type'          => 'checkbox',
+      '#title'         => t('Enable TFA'),
       '#default_value' => $config->get('enabled'),
-      '#description' => t('Enable TFA for account authentication.'),
+      '#description'   => t('Enable TFA for account authentication.'),
     );
 
     $enabled_state = array(
@@ -133,42 +150,43 @@ class SettingsForm extends ConfigFormBase {
 
     if (count($validate_plugins)) {
       $form['tfa_validate'] = array(
-        '#type' => 'select',
-        '#title' => t('Default validation plugin'),
-        '#options' => $validate_plugins_labels,
+        '#type'          => 'select',
+        '#title'         => t('Default validation plugin'),
+        '#options'       => $validate_plugins_labels,
         '#default_value' => \Drupal::config('tfa.settings')->get('validate_plugin'),
-        '#description' => t('Plugin that will be used as the default TFA process.'),
+        '#description'   => t('Plugin that will be used as the default TFA process.'),
         // Show only when TFA is enabled.
-        '#states' => $enabled_state,
+        '#states'        => $enabled_state,
       );
     }
     else {
       $form['no_validate'] = array(
-        '#value' => 'markup',
+        '#value'  => 'markup',
         '#markup' => t('No available validation plugins available. TFA process will not occur.'),
       );
     }
 
     if (count($validate_plugins_fallbacks)) {
       $form['tfa_fallback'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Validation fallback plugins'),
+        '#type'        => 'fieldset',
+        '#title'       => t('Validation fallback plugins'),
         '#description' => t('Fallback plugins and order. Note, if a fallback plugin is not setup for an account it will not be active in the TFA form.'),
-        '#states' => $enabled_state,
-        '#tree' => TRUE,
+        '#states'      => $enabled_state,
+        '#tree'        => TRUE,
       );
 
-      $enabled_fallback_plugins = \Drupal::config('tfa.settings')->get('fallback_plugins');
+      $enabled_fallback_plugins = \Drupal::config('tfa.settings')
+                                         ->get('fallback_plugins');
       foreach ($validate_plugins_fallbacks as $plugin => $fallbacks) {
-        $fallback_state  = array(
+        $fallback_state = array(
           'visible' => array(
             ':input[name="tfa_validate"]' => array('value' => $plugin),
           ),
         );
         if (count($fallbacks)) {
           foreach ($fallbacks as $fallback) {
-            $order = (@$enabled_fallback_plugins[$plugin][$fallback]['weight']) ?: -2;
-            $fallback_value = (@$enabled_fallback_plugins[$plugin][$fallback]['enable']) ?: 1;
+            $order                                    = (@$enabled_fallback_plugins[$plugin][$fallback]['weight']) ?: -2;
+            $fallback_value                           = (@$enabled_fallback_plugins[$plugin][$fallback]['enable']) ?: 1;
             $form['tfa_fallback'][$plugin][$fallback] = array(
               'enable' => array(
                 '#title'         => $validate_plugins_labels[$fallback],
@@ -189,9 +207,9 @@ class SettingsForm extends ConfigFormBase {
         }
         else {
           $form['tfa_fallback'][$plugin] = array(
-            '#type' => 'item',
+            '#type'        => 'item',
             '#description' => t('No fallback plugins available.'),
-            '#states'        => $fallback_state,
+            '#states'      => $fallback_state,
           );
         }
       }
@@ -202,17 +220,17 @@ class SettingsForm extends ConfigFormBase {
       $login_form_array = array();
 
       foreach ($login_plugins as $login_plugin) {
-        $id = $login_plugin['id'];
-        $title = $login_plugin['label']->render();
+        $id                    = $login_plugin['id'];
+        $title                 = $login_plugin['label']->render();
         $login_form_array[$id] = (string) $title;
       }
 
       $form['tfa_login'] = array(
-        '#type' => 'checkboxes',
-        '#title' => t('Login plugins'),
-        '#options' => $login_form_array,
+        '#type'          => 'checkboxes',
+        '#title'         => t('Login plugins'),
+        '#options'       => $login_form_array,
         '#default_value' => ($config->get('login_plugins')) ? $config->get('login_plugins') : array(),
-        '#description' => t('Plugins that can allow a user to skip the TFA process. If any plugin returns true the user will not be required to follow TFA. <strong>Use with caution.</strong>'),
+        '#description'   => t('Plugins that can allow a user to skip the TFA process. If any plugin returns true the user will not be required to follow TFA. <strong>Use with caution.</strong>'),
       );
     }
 
@@ -221,18 +239,18 @@ class SettingsForm extends ConfigFormBase {
       $send_form_array = array();
 
       foreach ($send_plugins as $send_plugin) {
-        $id = $send_plugin['id'];
-        $title = $send_plugin['label']->render();
+        $id                   = $send_plugin['id'];
+        $title                = $send_plugin['label']->render();
         $send_form_array[$id] = (string) $title;
       }
 
       $form['tfa_send'] = array(
-        '#type' => 'checkboxes',
-        '#title' => t('Send plugins'),
-        '#options' => $send_form_array,
+        '#type'          => 'checkboxes',
+        '#title'         => t('Send plugins'),
+        '#options'       => $send_form_array,
         '#default_value' => ($config->get('send_plugins')) ? $config->get('send_plugins') : array(),
         // TODO - Fill in description.
-        '#description' => t('Not sure what this is'),
+        '#description'   => t('Not sure what this is'),
       );
     }
 
@@ -241,18 +259,18 @@ class SettingsForm extends ConfigFormBase {
       $setup_form_array = array();
 
       foreach ($setup_plugins as $setup_plugin) {
-        $id = $setup_plugin['id'];
-        $title = $setup_plugin['label']->render();
+        $id                    = $setup_plugin['id'];
+        $title                 = $setup_plugin['label']->render();
         $setup_form_array[$id] = $title;
       }
 
       $form['tfa_setup'] = array(
-        '#type' => 'checkboxes',
-        '#title' => t('Setup plugins'),
-        '#options' => $setup_form_array,
+        '#type'          => 'checkboxes',
+        '#title'         => t('Setup plugins'),
+        '#options'       => $setup_form_array,
         '#default_value' => ($config->get('setup_plugins')) ? $config->get('setup_plugins') : array(),
         // TODO - Fill in description.
-        '#description' => t('Not sure what this is'),
+        '#description'   => t('Not sure what this is'),
       );
     }
 
@@ -270,17 +288,17 @@ class SettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $validate_plugin = $form_state->getValue('tfa_validate');
+    $validate_plugin  = $form_state->getValue('tfa_validate');
     $fallback_plugins = $form_state->getValue('tfa_fallback');
 
     $this->config('tfa.settings')
-      ->set('enabled', $form_state->getValue('tfa_enabled'))
-      ->set('setup_plugins', array_filter($form_state->getValue('tfa_setup')))
-      ->set('send_plugins', array_filter($form_state->getValue('tfa_send')))
-      ->set('login_plugins', array_filter($form_state->getValue('tfa_login')))
-      ->set('validate_plugin', $validate_plugin)
-      ->set('fallback_plugins', $fallback_plugins)
-      ->save();
+         ->set('enabled', $form_state->getValue('tfa_enabled'))
+         ->set('setup_plugins', array_filter($form_state->getValue('tfa_setup')))
+         ->set('send_plugins', array_filter($form_state->getValue('tfa_send')))
+         ->set('login_plugins', array_filter($form_state->getValue('tfa_login')))
+         ->set('validate_plugin', $validate_plugin)
+         ->set('fallback_plugins', $fallback_plugins)
+         ->save();
 
     parent::submitForm($form, $form_state);
   }

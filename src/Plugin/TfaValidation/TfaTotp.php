@@ -14,7 +14,7 @@ use Otp\Otp;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Defines the meta-data for the validation.
+ * TOTP validation class for performing TOTP validation.
  *
  * @TfaValidation(
  *   id = "tfa_totp",
@@ -52,8 +52,7 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
    * {@inheritdoc}
    */
   public function __construct(array $configuration, $plugin_id, $plugin_definition, UserDataInterface $user_data) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition,
-                        $user_data);
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $user_data);
     $this->auth      = new \StdClass();
     $this->auth->otp = new Otp();
     $this->auth->ga  = new GoogleAuthenticator();
@@ -91,13 +90,18 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
    * {@inheritdoc}
    */
   public function getForm(array $form, FormStateInterface $form_state) {
+    $message = 'Verification code is application generated and @length digits long.';
+    if ($this->getFallbacks() && $this->getUserData('tfa', 'tfa_recovery_code')) {
+      $message .= '<br/>Can not access your account? Use one of your recovery codes.';
+    }
     $form['code']             = array(
       '#type'        => 'textfield',
       '#title'       => t('Application verification code'),
-      '#description' => t('Verification code is application generated and @length digits long.', array('@length' => $this->codeLength)),
+      '#description' => t($message, array('@length' => $this->codeLength)),
       '#required'    => TRUE,
       '#attributes'  => array('autocomplete' => 'off'),
     );
+
     $form['actions']['#type'] = 'actions';
     $form['actions']['login'] = array(
       '#type'  => 'submit',
@@ -118,10 +122,12 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
       if ($this->alreadyAccepted) {
         $form_state->setErrorByName('code', t('Invalid code, it was recently used for a login. Please wait for the application to generate a new code.'));
       }
+      return FALSE;
     }
     else {
       // Store accepted code to prevent replay attacks.
       $this->storeAcceptedCode($values['code']);
+      return TRUE;
     }
   }
 
@@ -148,9 +154,8 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
    * @param string $code
    *    The validated code.
    */
-  // @todo This need to be evaluated further and put in base class possibly
   protected function storeAcceptedCode($code) {
-
+    // @todo This need to be evaluated further and put in base class possibly
     $code = preg_replace('/\s+/', '', $code);
     $hash = hash('sha1', Settings::getHashSalt() . $code);
 
@@ -209,7 +214,7 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
    */
   public function deleteSeed() {
     // @todo needs further evalutation and put in base class possibly
-    // @todo maybe make the data key an annotation and fetch it from there
+    // maybe make the data key an annotation and fetch it from there
     $this->deleteUserData('tfa', 'tfa_totp_seed');
   }
 

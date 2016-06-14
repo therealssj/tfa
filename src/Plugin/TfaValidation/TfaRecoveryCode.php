@@ -2,11 +2,18 @@
 
 namespace Drupal\tfa\Plugin\TfaValidation;
 
+use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\tfa\Plugin\TfaBasePlugin;
 use Drupal\tfa\Plugin\TfaValidationInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\user\UserDataInterface;
+use Otp\GoogleAuthenticator;
+use Otp\Otp;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
+ * Recovery validation class for performing recovery codes validation.
+ *
  * @TfaValidation(
  *   id = "tfa_recovery_code",
  *   label = @Translation("TFA Recovery Code"),
@@ -14,23 +21,40 @@ use Drupal\Core\Form\FormStateInterface;
  * )
  */
 class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
-
+  use DependencySerializationTrait;
   /**
-   * @var string
-   */
-  protected $usedCode;
-
-  /**
+   * Object containing the external validation library.
    *
+   * @var GoogleAuthenticator
    */
-  public function __construct(array $context) {
-    parent::__construct($context);
+  protected $auth;
+
+  /**
+   * {@inheritdoc}
+   */
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, UserDataInterface $user_data) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $user_data);
+    $this->auth      = new \StdClass();
+    $this->auth->otp = new Otp();
+    $this->auth->ga  = new GoogleAuthenticator();
     // Set in settings.php.
     $this->encryptionKey = \Drupal::config('tfa.settings')->get('secret_key');
   }
 
   /**
-   * @copydoc TfaBasePlugin::ready()
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    return new static(
+      $configuration,
+      $plugin_id,
+      $plugin_definition,
+      $container->get('user.data')
+    );
+  }
+
+  /**
+   * {@inheritdoc}
    */
   public function ready() {
     $codes = $this->getCodes();
@@ -38,7 +62,7 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
   }
 
   /**
-   * @copydoc TfaBasePlugin::getForm()
+   * {@inheritdoc}
    */
   public function getForm(array $form, FormStateInterface $form_state) {
     $form['recover'] = array(
@@ -57,14 +81,14 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
   }
 
   /**
-   * @copydoc TfaBasePlugin::validateForm()
+   * {@inheritdoc}
    */
   public function validateForm(array $form, FormStateInterface $form_state) {
     return $this->validate($form_state['values']['recover']);
   }
 
   /**
-   * @copydoc TfaBasePlugin::finalize()
+   * {@inheritdoc}
    */
   public function finalize() {
     // Mark code as used.
@@ -91,25 +115,61 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
    */
   public function getCodes() {
     // Lookup codes for account and decrypt.
-    $codes = array();
-    $result = db_query("SELECT id, code FROM {tfa_recovery_code} WHERE uid = :uid AND used = 0", array(':uid' => $this->context['uid']));
-    if (!empty($result)) {
-      foreach ($result as $data) {
-        $encrypted = base64_decode($data->code);
-        // trim() prevents extraneous escape characters.
-        $code = trim($this->decrypt($encrypted));
-        if (!empty($code)) {
-          $codes[$data->id] = $code;
-        }
-      }
-    }
+    // $codes = array();
+    // $result = db_query("SELECT id, code FROM {tfa_recovery_code} WHERE uid = :uid AND used = 0", array(':uid' => $this->context['uid']));
+    // if (!empty($result)) {
+    //  foreach ($result as $data) {
+    //    $encrypted = base64_decode($data->code);
+    //    // trim() prevents extraneous escape characters.
+    //    $code = trim($this->decrypt($encrypted));
+    //    if (!empty($code)) {
+    //      $codes[$data->id] = $code;
+    //    }
+    //  }
+    // }.
+    $codes = $this->getUserData('tfa', 'tfa_recovery_code');
+    array_walk($codes, function(&$v, $k) {
+      $v = $this->decrypt($v);
+    });
     return $codes;
   }
 
   /**
-   * @copydoc TfaBasePlugin::validate()
+   * Save recovery codes for current account.
+   *
+   * @param array $codes
+   *   Recovery codes for current account.
    */
-  protected function validate($code) {
+  protected function storeCodes($codes) {
+    $num_deleted = $this->deleteCodes();
+
+    // Encrypt code for storage.
+    array_walk($codes, function(&$v, $k) {
+      $v = $this->encrypt($v);
+    });
+    $data = ['tfa_recovery_code' => $codes];
+
+    $this->setUserData('tfa', $data);
+
+    // $message = 'Saved recovery codes for user %uid';
+    // if ($num_deleted) {
+    //  $message .= ' and deleted 1 old code';
+    // }
+    // \Drupal::logger('tfa')->info($message, ['%uid' => $this->configuration['uid']]);.
+  }
+
+  /**
+   * Delete existing codes.
+   */
+  public function deleteCodes() {
+    // Delete any existing codes.
+    $this->deleteUserData('tfa', 'tfa_recovery_code');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function validate($code) {
     $this->isValid = FALSE;
     // Get codes and compare.
     $codes = $this->getCodes();
@@ -121,9 +181,10 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
     $code = str_replace(' ', '', $code);
     foreach ($codes as $id => $stored) {
       // Remove spaces from stored code.
-      if (str_replace(' ', '', $stored) === $code) {
+      if (trim(str_replace(' ', '', $stored)) === $code) {
         $this->isValid = TRUE;
-        $this->usedCode = $id;
+        unset($codes[$id]);
+        $this->storeCodes($codes);
         return $this->isValid;
       }
     }
@@ -132,10 +193,56 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
   }
 
   /**
-   *
+   * {@inheritdoc}
    */
   public function getFallbacks() {
     return ($this->pluginDefinition['fallbacks']) ?: '';
+  }
+
+  /**
+   * Error messages of the current setup.
+   *
+   * @return string[]
+   *   An array of current errors.
+   */
+  public function getErrorMessages() {
+    return $this->errorMessages;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setUserData($module, array $data) {
+    $this->userData->set(
+      $module,
+      $this->configuration['uid'],
+      key($data),
+      current($data)
+    );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getUserData($module, $key) {
+    $result = $this->userData->get(
+      $module,
+      $this->configuration['uid'],
+      $key
+    );
+
+    return $result;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function deleteUserData($module, $key) {
+    $this->userData->delete(
+      $module,
+      $this->configuration['uid'],
+      $key
+    );
   }
 
 }
