@@ -11,31 +11,36 @@ use Drupal\user\UserDataInterface;
  */
 abstract class TfaBasePlugin extends PluginBase {
   /**
+   * The user submitted code to be validated.
+   *
    * @var string
    */
   protected $code;
 
   /**
+   * The allowed code length.
+   *
    * @var int
    */
   protected $codeLength;
 
   /**
-   * @var array
+   * The error for the current validation.
+   *
+   * @var string[]
    */
-  protected $context;
+  protected $errorMessages;
 
   /**
-   * @var array
-   */
-  protected $errorMessages = array();
-
-  /**
+   * Whether the validation succeeded or not.
+   *
    * @var bool
    */
   protected $isValid;
 
   /**
+   * The user secret.
+   *
    * @var string
    */
   protected $encryptionKey;
@@ -64,6 +69,9 @@ abstract class TfaBasePlugin extends PluginBase {
     // Default code length is 6.
     $this->codeLength = 6;
     $this->isValid = FALSE;
+
+    // User Data service to store user-based data in key value pairs.
+    $this->userData = $user_data;
   }
 
   /**
@@ -78,6 +86,7 @@ abstract class TfaBasePlugin extends PluginBase {
    * Get error messages suitable for form_set_error().
    *
    * @return array
+   *   An array of error strings.
    */
   public function getErrorMessages() {
     return $this->errorMessages;
@@ -124,6 +133,7 @@ abstract class TfaBasePlugin extends PluginBase {
    * Generate a random string of characters of length $this->codeLength.
    *
    * @return string
+   *   A random string.
    */
   protected function generate() {
     $characters = '123456789abcdefghijklmnpqrstuvwxyz';
@@ -140,9 +150,11 @@ abstract class TfaBasePlugin extends PluginBase {
    *
    * Should be used when writing codes to storage.
    *
-   * @param string .
+   * @param string $text
+   *   The string to be encrypted.
    *
    * @return string
+   *   The enrcypted string.
    */
   protected function encrypt($text) {
     $key = $this->encryptionKey;
@@ -167,9 +179,11 @@ abstract class TfaBasePlugin extends PluginBase {
    *
    * Should be used when reading codes from storage.
    *
-   * @param string
+   * @param string $data
+   *   The string to be decrypted.
    *
    * @return string
+   *   The decrypted string.
    */
   protected function decrypt($data) {
     $key = $this->encryptionKey;

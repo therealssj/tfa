@@ -10,7 +10,7 @@ use Drupal\Core\Plugin\DefaultPluginManager;
 use Drupal\user\UserDataInterface;
 
 /**
- *
+ * The validation plugin manager.
  */
 class TfaValidationPluginManager extends DefaultPluginManager {
 
@@ -21,6 +21,11 @@ class TfaValidationPluginManager extends DefaultPluginManager {
    */
   protected $userData;
 
+  /**
+   * TFA configuration object.
+   *
+   * @var \Drupal\Core\Config\ImmutableConfig
+   */
   protected $tfaSettings;
 
   /**
@@ -43,15 +48,17 @@ class TfaValidationPluginManager extends DefaultPluginManager {
   }
 
   /**
-   * Create an instance of a plugin.
+   * Create an instance of a validation plugin.
    *
    * @param string $plugin_id
+   *    The id of the setup plugin.
    * @param array $configuration
+   *    Configuration data for the setup plugin.
    *
    * @return object
+   *    Required validation plugin instance
    */
   public function createInstance($plugin_id, array $configuration = array()) {
-
     // @todo defining userdata as a parameter results in an error. why?
     $plugin_definition = $this->getDefinition($plugin_id);
     $plugin_class = DefaultFactory::getPluginClass($plugin_id, $plugin_definition);
@@ -70,8 +77,10 @@ class TfaValidationPluginManager extends DefaultPluginManager {
    * The plugin manager should handle determining what plugin is required.
    *
    * @param array $options
+   *   The configuration for current validation.
    *
-   * @return false|object
+   * @return object
+   *   The validation plugin instance.
    */
   public function getInstance(array $options) {
     $validate_plugin = $this->tfaSettings->get('validate_plugin');

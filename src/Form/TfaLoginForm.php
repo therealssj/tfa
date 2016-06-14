@@ -2,6 +2,7 @@
 
 namespace Drupal\tfa\Form;
 
+use Drupal\Core\Session\AccountInterface;
 use Drupal\tfa\TfaLoginPluginManager;
 use Drupal\tfa\TfaValidationPluginManager;
 use Drupal\user\Form\UserLoginForm;
@@ -15,17 +16,36 @@ use Drupal\tfa\Plugin\TfaValidationInterface;
 use Drupal\Component\Utility\Crypt;
 
 /**
- *
+ * TFA user login form.
  */
 class TfaLoginForm extends UserLoginForm {
 
   /**
+   * The validation plugin manager to fetch plugin information.
+   *
    * @var \Drupal\tfa\TfaValidationPluginManager
    */
   protected $tfaValidationManager;
+
+  /**
+   * The login plugin manager to fetch plugin information.
+   *
+   * @var \Drupal\tfa\TfaLoginPluginManager
+   */
   protected $tfaLoginManager;
 
+  /**
+   * The current validation plugin.
+   *
+   * @var \Drupal\tfa\Plugin\TfaValidationInterface
+   */
   protected $tfaValidationPlugin;
+
+  /**
+   * The login plugins.
+   *
+   * @var \Drupal\tfa\Plugin\TfaLoginInterface
+   */
   protected $tfaLoginPlugins;
 
   /**
@@ -65,7 +85,7 @@ class TfaLoginForm extends UserLoginForm {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $form = parent::buildForm($form, $form_state);
-    $form['#submit'][] = '::TfaLoginFormRedirect';
+    $form['#submit'][] = '::tfaLoginFormRedirect';
 
     return $form;
   }
@@ -78,12 +98,10 @@ class TfaLoginForm extends UserLoginForm {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // Similar to tfa_user_login() but not required to force user logout.
-    /** @var $account \Drupal\user\UserInterface */
     $account = $this->userStorage->load($form_state->get('uid'));
 
     // GetPlugin
     // Pass to service functions.
-    /** @var  $tfaValidationPlugin \Drupal\tfa\Plugin\TfaValidationInterface */
     $tfaValidationPlugin = $this->tfaValidationManager->getInstance(['uid' => $account->id()]);
     $this->tfaLoginPlugins = $this->tfaLoginManager->getPlugins(['uid' => $account->id()]);
 
@@ -140,8 +158,9 @@ class TfaLoginForm extends UserLoginForm {
    * sent to the TFA form.
    *
    * @param FormStateInterface $form_state
+   *   The current form state.
    */
-  public function TfaLoginFormRedirect($form, &$form_state) {
+  public function tfaLoginFormRedirect($form, FormStateInterface $form_state) {
     $route = $form_state->getValue('tfa_redirect');
     if (isset($route)) {
       $form_state->setRedirect($route);
@@ -151,11 +170,13 @@ class TfaLoginForm extends UserLoginForm {
   /**
    * Check if TFA process has completed so authentication should not be stopped.
    *
-   * @param $account User account
+   * @param \Drupal\Core\Session\AccountInterface $account
+   *   The current user account.
    *
    * @return bool
+   *   Whether the login has already been completed or not.
    */
-  protected function loginComplete($account) {
+  protected function loginComplete(AccountInterface $account) {
     // TFA master login allowed switch is set by tfa_login().
     //    $tfa_session = $this->session->get('tfa');
     //    if (isset($tfa_session[$account->id()]['login']) && $tfa_session[$account->id()]['login'] === TRUE) {
@@ -168,8 +189,10 @@ class TfaLoginForm extends UserLoginForm {
    * Determine if TFA process is ready.
    *
    * @param \Drupal\tfa\Plugin\TfaValidationInterface $tfaValidationPlugin
+   *   The plugin instance of the validation method.
    *
-   * @return bool Whether process can begin or not.
+   * @return bool
+   *   Whether process can begin or not.
    */
   protected function ready(TfaValidationInterface $tfaValidationPlugin) {
     return $tfaValidationPlugin->ready();
@@ -180,9 +203,8 @@ class TfaLoginForm extends UserLoginForm {
    *
    * If any plugin returns TRUE then authentication is not interrupted by TFA.
    *
-   * @param \Drupal\tfa\Plugin\TfaLoginInterface $tfaLogin
-   *
    * @return bool
+   *   TRUE if login allowed otherwise FALSE.
    */
   protected function loginAllowed() {
     if (!empty($this->tfaLoginPlugins)) {

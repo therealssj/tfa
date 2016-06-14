@@ -12,6 +12,7 @@ services:
   plugin.manager.tfa.setup:
     class: Drupal\tfa\TfaSetupPluginManager
     parent: default_plugin_manager
+    arguments: ['@user.data']
   tfa.manager:
     class: Drupal\tfa\TfaManager
     arguments: ['@module_handler', '@config.factory', '@current_user', '@entity.manager', '@session', '@request_stack']

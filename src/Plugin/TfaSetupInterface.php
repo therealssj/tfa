@@ -14,21 +14,38 @@ use Drupal\Core\Form\FormStateInterface;
 interface TfaSetupInterface {
 
   /**
+   * Get the setup form for the validation method.
+   *
    * @param array $form
-   * @param FormStateInterface $form_state
+   *   The configuration form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   *
+   * @return array
+   *   Form API array.
    */
   public function getSetupForm(array $form, FormStateInterface $form_state);
 
   /**
+   * Validate the setup data.
+   *
    * @param array $form
-   * @param FormStateInterface $form_state
+   *   The configuration form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
    */
   public function validateSetupForm(array $form, FormStateInterface $form_state);
 
   /**
+   * Submit the setup form.
+   *
    * @param array $form
-   * @param FormStateInterface $form_state
+   *   The configuration form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   *
    * @return bool
+   *   TRUE if no errors occur when saving the data.
    */
   public function submitSetupForm(array $form, FormStateInterface $form_state);
 
@@ -36,6 +53,7 @@ interface TfaSetupInterface {
    * Returns a list of links containing helpful information for plugin use.
    *
    * @return string[]
+   *   An array containing help links for e.g., OTP generation.
    */
   public function getHelpLinks();
 

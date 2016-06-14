@@ -8,12 +8,13 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Site\Settings;
 use Drupal\tfa\Plugin\TfaBasePlugin;
 use Drupal\tfa\Plugin\TfaValidationInterface;
+use Drupal\user\UserDataInterface;
 use Otp\GoogleAuthenticator;
 use Otp\Otp;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Defines the meta-data for the validation.
+ * HOTP validation class for performing HOTP validation.
  *
  * @TfaValidation(
  *   id = "tfa_hotp",
@@ -42,11 +43,15 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
   protected $userData;
 
   /**
+   * The time-window in which the validation should be done.
+   *
    * @var int
    */
   protected $timeSkew;
 
   /**
+   * Whether the code has already been used or not.
+   *
    * @var bool
    */
   protected $alreadyAccepted;
@@ -91,10 +96,13 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
    * {@inheritdoc}
    */
   public function getForm(array $form, FormStateInterface $form_state) {
+    $message = 'Verification code is application generated and @length digits long.';
+    if ($this->getFallbacks() && $this->getUserData('tfa', 'tfa_recovery_code')) {
+      $message .= '<br/>Can not access your account? Use one of your recovery codes.';
+    }
     $form['code']             = array(
       '#type'        => 'textfield',
       '#title'       => t('Application verification code'),
-      '#description' => t('Verification code is application generated and @length digits long.', array('@length' => $this->codeLength)),
       '#required'    => TRUE,
       '#attributes'  => array('autocomplete' => 'off'),
     );
@@ -118,10 +126,12 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
       if ($this->alreadyAccepted) {
         $form_state->setErrorByName('code', t('Invalid code, it was recently used for a login. Please wait for the application to generate a new code.'));
       }
+      return FALSE;
     }
     else {
       // Store accepted code to prevent replay attacks.
       $this->storeAcceptedCode($values['code']);
+      return TRUE;
     }
   }
 
@@ -137,7 +147,7 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
     else {
       // Get OTP seed.
       $seed          = $this->getSeed();
-      $counter       = $this->gethotpCounter();
+      $counter       = $this->getHotpCounter();
       $this->isValid = ($seed && ($counter = $this->auth->otp->checkHotpResync(Base32::decode($seed), ++$counter, $code)));
       $this->setUserData('tfa', ['tfa_hotp_counter' => $counter]);
     }
@@ -256,10 +266,12 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
   }
 
   /**
+   * Get the HOTP counter.
+   *
    * @return int
    *   The current value of the HOTP counter, or 1 if no value was found
    */
-  public function gethotpCounter() {
+  public function getHotpCounter() {
     $result = ($this->getUserData('tfa', 'tfa_hotp_counter')) ?: 1;
 
     return $result;

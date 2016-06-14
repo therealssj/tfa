@@ -3,6 +3,7 @@
 namespace Drupal\tfa;
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\tfa\Plugin\TfaSetupInterface;
 
 /**
  * Class TfaSetup.
@@ -10,32 +11,25 @@ use Drupal\Core\Form\FormStateInterface;
 class TfaSetup {
 
   /**
-   * @var TfaBasePlugin
+   * Current setup plugin.
+   *
+   * @var $setupPlugin
    */
   protected $setupPlugin;
 
   /**
    * TFA Setup constructor.
    *
-   * @param TfaSetup $plugin
+   * @param TfaSetupInterface $plugin
    *   Plugins to instansiate.
    *
    *   Must include key:
    *
    *     - 'setup'
    *       Class name of TfaBasePlugin implementing TfaSetupPluginInterface.
-   *
-   * @param array $context
-   *   Context of TFA process.
-   *
-   *   Must include key:
-   *
-   *     - 'uid'
-   *       Account uid of user in TFA process.
    */
-  public function __construct($plugin) {
+  public function __construct(TfaSetupInterface $plugin) {
     $this->setupPlugin = $plugin;
-    // $this->context['plugins'] = $plugins;.
   }
 
   /**
@@ -52,9 +46,12 @@ class TfaSetup {
    * Get plugin form.
    *
    * @param array $form
-   * @param array $form_state
+   *   An associative array containing the structure of the form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
    *
    * @return array
+   *   Form API array.
    */
   public function getForm(array $form, FormStateInterface &$form_state) {
     return $this->setupPlugin->getSetupForm($form, $form_state);
@@ -64,9 +61,12 @@ class TfaSetup {
    * Validate form.
    *
    * @param array $form
-   * @param array $form_state
+   *   An associative array containing the structure of the form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
    *
    * @return bool
+   *   TRUE if setup completed otherwise FALSE.
    */
   public function validateForm(array $form, FormStateInterface &$form_state) {
     return $this->setupPlugin->validateSetupForm($form, $form_state);
@@ -76,16 +76,22 @@ class TfaSetup {
    * Return process error messages.
    *
    * @return array
+   *   An array containing the setup errors.
    */
   public function getErrorMessages() {
     return $this->setupPlugin->getErrorMessages();
   }
 
   /**
+   * Submit the setup form.
    *
    * @param array $form
-   * @param array $form_state
+   *   An associative array containing the structure of the form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   *
    * @return bool
+   *   TRUE if no errors occur when saving the data.
    */
   public function submitForm(array $form, FormStateInterface &$form_state) {
     return $this->setupPlugin->submitSetupForm($form, $form_state);
