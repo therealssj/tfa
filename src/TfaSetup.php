@@ -5,7 +5,7 @@ namespace Drupal\tfa;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
- * Class TfaSetup
+ * Class TfaSetup.
  */
 class TfaSetup {
 
@@ -32,11 +32,10 @@ class TfaSetup {
    *
    *     - 'uid'
    *       Account uid of user in TFA process.
-   *
    */
   public function __construct($plugin) {
     $this->setupPlugin = $plugin;
-//    $this->context['plugins'] = $plugins;
+    // $this->context['plugins'] = $plugins;.
   }
 
   /**
@@ -54,6 +53,7 @@ class TfaSetup {
    *
    * @param array $form
    * @param array $form_state
+   *
    * @return array
    */
   public function getForm(array $form, FormStateInterface &$form_state) {
@@ -65,6 +65,7 @@ class TfaSetup {
    *
    * @param array $form
    * @param array $form_state
+   *
    * @return bool
    */
   public function validateForm(array $form, FormStateInterface &$form_state) {

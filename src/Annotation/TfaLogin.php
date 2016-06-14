@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\tfa\Annotation\TfaLogin
- */
-
 namespace Drupal\tfa\Annotation;
 
 use Drupal\Component\Annotation\Plugin;
@@ -40,6 +35,5 @@ class TfaLogin extends Plugin {
    * @var \Drupal\Core\Annotation\Translation
    */
   public $description;
-
 
 }

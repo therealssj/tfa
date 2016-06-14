@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\tfa\Annotation\TfaValidation
- */
-
 namespace Drupal\tfa\Annotation;
 
 use Drupal\Component\Annotation\Plugin;
@@ -42,7 +37,7 @@ class TfaValidation extends Plugin {
   public $description;
 
   /**
-   * Fallback Plugins this validation method support
+   * Fallback Plugins this validation method support.
    *
    * @var string[]
    */

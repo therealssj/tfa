@@ -1,20 +1,17 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\tfa\Form\EntryForm.
- */
-
 namespace Drupal\tfa\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\tfa\Plugin\TfaValidationInterface;
 use Drupal\tfa\TfaLoginPluginManager;
 use Drupal\tfa\TfaValidationPluginManager;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
+/**
+ *
+ */
 class EntryForm extends FormBase {
 
   /**
@@ -26,18 +23,23 @@ class EntryForm extends FormBase {
   protected $tfaLoginPlugins;
   protected $tfaFallbackPlugin;
 
+  /**
+   *
+   */
   public function __construct(TfaValidationPluginManager $tfa_validation_manager, TfaLoginPluginManager $tfa_login_manager) {
     $this->tfaValidationManager = $tfa_validation_manager;
     $this->tfaLoginManager = $tfa_login_manager;
   }
 
+  /**
+   *
+   */
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('plugin.manager.tfa.validation'),
       $container->get('plugin.manager.tfa.login')
       );
   }
-
 
   /**
    * {@inheritdoc}
@@ -49,18 +51,17 @@ class EntryForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, AccountInterface $user = null) {
+  public function buildForm(array $form, FormStateInterface $form_state, AccountInterface $user = NULL) {
     // Check flood tables.
-    //@TODO Reimplement Flood Controls.
-//    if (_tfa_hit_flood($tfa)) {
-//      \Drupal::moduleHandler()->invokeAll('tfa_flood_hit', [$tfa->getContext()]);
-//      return drupal_access_denied();
-//    }
-//
-
+    // @TODO Reimplement Flood Controls.
+    //    if (_tfa_hit_flood($tfa)) {
+    //      \Drupal::moduleHandler()->invokeAll('tfa_flood_hit', [$tfa->getContext()]);
+    //      return drupal_access_denied();
+    //    }
+    //
     // Get TFA plugins form.
     $this->tfaValidationPlugin = $this->tfaValidationManager->getInstance(['uid' => $user->id()]);
-    $form =  $this->tfaValidationPlugin->getForm($form, $form_state);
+    $form = $this->tfaValidationPlugin->getForm($form, $form_state);
 
     if ($this->tfaLoginPlugins = $this->tfaLoginManager->getPlugins(['uid' => $user->id()])) {
       foreach ($this->tfaLoginPlugins as $login_plugin) {
@@ -70,18 +71,17 @@ class EntryForm extends FormBase {
       }
     }
 
-  //@TODO Add $fallback plugin capabilities.
-    //If there is a fallback method, set it.
-//    if ($tfa->hasFallback()) {
-//      $form['actions']['fallback'] = array(
-//        '#type' => 'submit',
-//        '#value' => t("Can't access your account?"),
-//        '#submit' => array('tfa_form_submit'),
-//        '#limit_validation_errors' => array(),
-//        '#weight' => 20,
-//      );
-//    }
-
+    // @TODO Add $fallback plugin capabilities.
+    // If there is a fallback method, set it.
+    //    if ($tfa->hasFallback()) {
+    //      $form['actions']['fallback'] = array(
+    //        '#type' => 'submit',
+    //        '#value' => t("Can't access your account?"),
+    //        '#submit' => array('tfa_form_submit'),
+    //        '#limit_validation_errors' => array(),
+    //        '#weight' => 20,
+    //      );
+    //    }
     // Set account element.
     $form['account'] = array(
       '#type' => 'value',
@@ -114,24 +114,22 @@ class EntryForm extends FormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $user = $form_state->getValue('account');
-    //If validation failed or fallback was requested.
-    //if($form_state->hasAnyErrors()) {
-      // If fallback was triggered TFA process has been reset to new validate
-      // plugin so run begin and store new context.
-
-//      $fallback = $form_state->getValue('fallback');
-//      if (isset($fallback) && $form_state->getValue('op') === $fallback) {
-//        $tfa->begin();
-//      }
-      //$context = $tfa->getContext();
-      //$this->tfaManager->setContext($user, $context);
-      //$form_state['rebuild'] = TRUE;
-    //}
-    //else {
+    // If validation failed or fallback was requested.
+    // if($form_state->hasAnyErrors()) {
+    // If fallback was triggered TFA process has been reset to new validate
+    // plugin so run begin and store new context.
+    //      $fallback = $form_state->getValue('fallback');
+    //      if (isset($fallback) && $form_state->getValue('op') === $fallback) {
+    //        $tfa->begin();
+    //      }
+    // $context = $tfa->getContext();
+    // $this->tfaManager->setContext($user, $context);
+    // $form_state['rebuild'] = TRUE;
+    // }
+    // else {
     // TFA process is complete so finalize and authenticate user.
-    //$context = $this->tfaManager->getContext($user);
-
-    // TODO This could be improved with EventDispatcher
+    // $context = $this->tfaManager->getContext($user);
+    // TODO This could be improved with EventDispatcher.
     if (!empty($this->tfaLoginPlugins)) {
       foreach ($this->tfaLoginPlugins as $plugin) {
         if (method_exists($plugin, 'submitForm')) {
@@ -143,14 +141,13 @@ class EntryForm extends FormBase {
     user_login_finalize($user);
 
     // TODO Should finalize() be after user_login_finalize or before?!
-    // TODO This could be improved with EventDispatcher
+    // TODO This could be improved with EventDispatcher.
     $this->finalize();
 
-
     // Set redirect based on query parameters, existing $form_state or context.
-    //$form_state['redirect'] = _tfa_form_get_destination($context, $form_state, $user);
+    // $form_state['redirect'] = _tfa_form_get_destination($context, $form_state, $user);.
     $form_state->setRedirect('<front>');
-    //}
+    // }.
   }
 
   /**
@@ -177,7 +174,5 @@ class EntryForm extends FormBase {
   protected function getEditableConfigNames() {
     return ['tfa.settings'];
   }
-
-
 
 }

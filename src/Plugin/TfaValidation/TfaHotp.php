@@ -8,7 +8,6 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Site\Settings;
 use Drupal\tfa\Plugin\TfaBasePlugin;
 use Drupal\tfa\Plugin\TfaValidationInterface;
-use Drupal\user\UserDataInterface;
 use Otp\GoogleAuthenticator;
 use Otp\Otp;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -17,16 +16,17 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Defines the meta-data for the validation.
  *
  * @TfaValidation(
- *   id = "tfa_totp",
- *   label = @Translation("TFA Totp"),
- *   description = @Translation("TFA Totp Validation Plugin"),
+ *   id = "tfa_hotp",
+ *   label = @Translation("TFA Hotp"),
+ *   description = @Translation("TFA Hotp Validation Plugin"),
  *   fallbacks = {
  *    "tfa_recovery_code"
  *   }
  * )
  */
-class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
+class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
   use DependencySerializationTrait;
+
   /**
    * Object containing the external validation library.
    *
@@ -35,15 +35,18 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
   protected $auth;
 
   /**
-   * The time-window in which the validation should be done.
+   * Provides the user data service object.
    *
+   * @var \Drupal\user\UserDataInterface
+   */
+  protected $userData;
+
+  /**
    * @var int
    */
   protected $timeSkew;
 
   /**
-   * Whether the code has already been used or not.
-   *
    * @var bool
    */
   protected $alreadyAccepted;
@@ -52,8 +55,7 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
    * {@inheritdoc}
    */
   public function __construct(array $configuration, $plugin_id, $plugin_definition, UserDataInterface $user_data) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition,
-                        $user_data);
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $user_data);
     $this->auth      = new \StdClass();
     $this->auth->otp = new Otp();
     $this->auth->ga  = new GoogleAuthenticator();
@@ -63,9 +65,7 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
     $this->encryptionKey   = \Drupal::config('tfa.settings')->get('secret_key');
     $this->alreadyAccepted = FALSE;
 
-    // User Data service to store user-based data in key value pairs.
     $this->userData = $user_data;
-
   }
 
   /**
@@ -137,7 +137,9 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
     else {
       // Get OTP seed.
       $seed          = $this->getSeed();
-      $this->isValid = ($seed && $this->auth->otp->checkTotp(Base32::decode($seed), $code, $this->timeSkew));
+      $counter       = $this->gethotpCounter();
+      $this->isValid = ($seed && ($counter = $this->auth->otp->checkHotpResync(Base32::decode($seed), ++$counter, $code)));
+      $this->setUserData('tfa', ['tfa_hotp_counter' => $counter]);
     }
     return $this->isValid;
   }
@@ -148,9 +150,7 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
    * @param string $code
    *    The validated code.
    */
-  // @todo This need to be evaluated further and put in base class possibly
   protected function storeAcceptedCode($code) {
-
     $code = preg_replace('/\s+/', '', $code);
     $hash = hash('sha1', Settings::getHashSalt() . $code);
 
@@ -193,7 +193,8 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
   protected function getSeed() {
     // Lookup seed for account and decrypt.
     $uid    = $this->configuration['uid'];
-    $result = $this->getUserData('tfa', 'tfa_totp_seed');
+    $result = $this->getUserData('tfa', 'tfa_hotp_seed');
+
     if (!empty($result)) {
       $encrypted = Base32::decode($result['seed']);
       $seed      = $this->decrypt($encrypted);
@@ -208,9 +209,7 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
    * Delete the seed of the current validated user.
    */
   public function deleteSeed() {
-    // @todo needs further evalutation and put in base class possibly
-    // @todo maybe make the data key an annotation and fetch it from there
-    $this->deleteUserData('tfa', 'tfa_totp_seed');
+    $this->deleteUserData('tfa', 'tfa_hotp_seed');
   }
 
   /**
@@ -254,6 +253,16 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
       $this->configuration['uid'],
       $key
     );
+  }
+
+  /**
+   * @return int
+   *   The current value of the HOTP counter, or 1 if no value was found
+   */
+  public function gethotpCounter() {
+    $result = ($this->getUserData('tfa', 'tfa_hotp_counter')) ?: 1;
+
+    return $result;
   }
 
 }

@@ -1,14 +1,9 @@
 <?php
 
-/**
- * @file TfaRecoveryCode class
- */
-
 namespace Drupal\tfa\Plugin\TfaValidation;
 
 use Drupal\tfa\Plugin\TfaBasePlugin;
 use Drupal\tfa\Plugin\TfaValidationInterface;
-use Drupal\tfa\Plugin\TfaSetupInterface;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
@@ -25,10 +20,13 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
    */
   protected $usedCode;
 
+  /**
+   *
+   */
   public function __construct(array $context) {
     parent::__construct($context);
     // Set in settings.php.
-    $this->encryptionKey = \Drupal::config('tfa_basic.settings')->get('secret_key');
+    $this->encryptionKey = \Drupal::config('tfa.settings')->get('secret_key');
   }
 
   /**
@@ -133,7 +131,10 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
     return $this->isValid;
   }
 
-  public function getFallbacks(){
+  /**
+   *
+   */
+  public function getFallbacks() {
     return ($this->pluginDefinition['fallbacks']) ?: '';
   }
 

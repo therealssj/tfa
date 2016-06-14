@@ -1,14 +1,9 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\tfa\TfaLoginInterface.
- */
-
 namespace Drupal\tfa\Plugin;
 
 /**
- * Interface TfaLoginInterface
+ * Interface TfaLoginInterface.
  *
  * Login plugins interact with the Tfa loginAllowed() process prior to starting
  * a TFA process.
