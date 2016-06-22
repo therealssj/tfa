@@ -1,7 +1,10 @@
 tfa.settings:
-  type: mapping
+  type: config_object
   label: 'TFA settings'
   mapping:
+    enabled:
+      type: integer
+      label: 'TFA enabled'
     secret_key:
      type: string
      label: 'Secret key to to use as encryption key for TOTP seed encryption. Should be set in settings.php and not in the Drupal database.'
@@ -11,9 +14,19 @@ tfa.settings:
     recovery_codes_amount:
      type: integer
      label: 'Recovery codes amount. Default is 10.'
-    enabled:
-      type: integer
-      label: 'TFA enabled'
+    name_prefix:
+      type: string
+      label: 'Prefix for TOTP QR code names. Suffix is account username.'
+    fallback_plugins:
+      type: mapping
+      label: 'Fallback plugins'
+      mapping:
+        tfa_totp:
+          type: otp.fallbacks
+          label: 'TOTP fallbacks'
+        tfa_hotp:
+          type: otp.fallbacks
+          label: 'HOTP fallbacks'
     setup_plugins:
       type: sequence
       label: 'TFA plugins'
@@ -26,10 +39,25 @@ tfa.settings:
     validate_plugin:
       type: string
       label: 'Current validation plugin'
-    fallback_plugins:
-      type: sequence
-      label: 'Fallback plugins'
     help_text:
       type: string
       label: 'Text to display on help page. Plain text only.'
 
+otp.fallbacks:
+  type: mapping
+  label: 'OTP Fallbacks'
+  mapping:
+    tfa_recovery_code:
+      type: tfa.plugin.config
+      label: 'Recovery code fallback'
+
+tfa.plugin.config:
+  type: mapping
+  label: 'TFA validation plugin'
+  mapping:
+    enable:
+      type: integer
+      label: 'Plugin state'
+    weight:
+      type: integer
+      label: 'Weight'

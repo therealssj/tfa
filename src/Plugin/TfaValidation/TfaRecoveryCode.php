@@ -127,7 +127,7 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
     //    }
     //  }
     // }.
-    $codes = $this->getUserData('tfa', 'tfa_recovery_code');
+    $codes = $this->getUserData('tfa', 'tfa_recovery_code') ?: [];
     array_walk($codes, function(&$v, $k) {
       $v = $this->decrypt($v);
     });
@@ -140,8 +140,8 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
    * @param array $codes
    *   Recovery codes for current account.
    */
-  protected function storeCodes($codes) {
-    $num_deleted = $this->deleteCodes();
+  public function storeCodes($codes) {
+    $this->deleteCodes();
 
     // Encrypt code for storage.
     array_walk($codes, function(&$v, $k) {

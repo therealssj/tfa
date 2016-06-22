@@ -9,19 +9,13 @@ use Drupal\tfa\TfaLoginPluginManager;
 use Drupal\tfa\TfaSendPluginManager;
 use Drupal\tfa\TfaSetupPluginManager;
 use Drupal\tfa\TfaValidationPluginManager;
+use Drupal\user\UserDataInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * The admin configuration page.
  */
 class SettingsForm extends ConfigFormBase {
-
-  /**
-   * The config factory object.
-   *
-   * @var \Drupal\Core\Config\ConfigFactoryInterface
-   */
-  protected $configFactory;
 
   /**
    * The login plugin manager to fetch plugin information.
@@ -52,14 +46,37 @@ class SettingsForm extends ConfigFormBase {
   protected $tfaSetup;
 
   /**
-   * The admin configuraiton form constructor.
+   * Provides the user data service object.
+   *
+   * @var \Drupal\user\UserDataInterface
    */
-  public function __construct(ConfigFactoryInterface $config_factory, TfaLoginPluginManager $tfa_login, TfaSendPluginManager $tfa_send, TfaValidationPluginManager $tfa_validation, TfaSetupPluginManager $tfa_setup) {
+  protected $userData;
+
+  /**
+   * The admin configuraiton form constructor.
+   *
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
+   *   The config factory object.
+   * @param \Drupal\tfa\TfaLoginPluginManager $tfa_login
+   *   The login plugin manager.
+   * @param \Drupal\tfa\TfaSendPluginManager $tfa_send
+   *   The send plugin manager.
+   * @param \Drupal\tfa\TfaValidationPluginManager $tfa_validation
+   *   The validation plugin manager.
+   * @param \Drupal\tfa\TfaSetupPluginManager $tfa_setup
+   *   The setup plugin manager.
+   * @param \Drupal\user\UserDataInterface $user_data
+   *   The user data service.
+   */
+  public function __construct(ConfigFactoryInterface $config_factory, TfaLoginPluginManager $tfa_login, TfaSendPluginManager $tfa_send, TfaValidationPluginManager $tfa_validation, TfaSetupPluginManager $tfa_setup, UserDataInterface $user_data) {
     parent::__construct($config_factory);
     $this->tfaLogin      = $tfa_login;
     $this->tfaSend       = $tfa_send;
     $this->tfaSetup      = $tfa_setup;
     $this->tfaValidation = $tfa_validation;
+
+    // User Data service to store user-based data in key value pairs.
+    $this->userData = $user_data;
   }
 
   /**
@@ -76,7 +93,8 @@ class SettingsForm extends ConfigFormBase {
       $container->get('plugin.manager.tfa.login'),
       $container->get('plugin.manager.tfa.send'),
       $container->get('plugin.manager.tfa.validation'),
-      $container->get('plugin.manager.tfa.setup')
+      $container->get('plugin.manager.tfa.setup'),
+      $container->get('user.data')
     );
   }
 
@@ -108,8 +126,10 @@ class SettingsForm extends ConfigFormBase {
     $validate_plugins_labels    = [];
     $validate_plugins_fallbacks = [];
     foreach ($validate_plugins as $plugin) {
-      $validate_plugins_labels[$plugin['id']]    = $plugin['label']->render();
-      $validate_plugins_fallbacks[$plugin['id']] = $plugin['fallbacks'];
+      $validate_plugins_labels[$plugin['id']] = $plugin['label']->render();
+      if (isset($plugin['fallbacks'])) {
+        $validate_plugins_fallbacks[$plugin['id']] = $plugin['fallbacks'];
+      }
     }
 
     // Get Setup Plugins.
@@ -175,8 +195,7 @@ class SettingsForm extends ConfigFormBase {
         '#tree'        => TRUE,
       );
 
-      $enabled_fallback_plugins = \Drupal::config('tfa.settings')
-                                         ->get('fallback_plugins');
+      $enabled_fallback_plugins = \Drupal::config('tfa.settings')->get('fallback_plugins');
       foreach ($validate_plugins_fallbacks as $plugin => $fallbacks) {
         $fallback_state = array(
           'visible' => array(
@@ -291,11 +310,19 @@ class SettingsForm extends ConfigFormBase {
     $validate_plugin  = $form_state->getValue('tfa_validate');
     $fallback_plugins = $form_state->getValue('tfa_fallback');
 
+    // Delete tfa data if plugin is disabled.
+    if ($this->config('tfa.settings')->get('enabled') && !$form_state->getValue('tfa_enabled')) {
+      $this->userData->delete('tfa');
+    }
+
+    $setup_plugins = $form_state->getValue('tfa_setup') ?: [];
+    $send_plugins = $form_state->getValue('tfa_send') ?: [];
+    $login_plugins = $form_state->getValue('tfa_login') ?: [];
     $this->config('tfa.settings')
          ->set('enabled', $form_state->getValue('tfa_enabled'))
-         ->set('setup_plugins', array_filter($form_state->getValue('tfa_setup')))
-         ->set('send_plugins', array_filter($form_state->getValue('tfa_send')))
-         ->set('login_plugins', array_filter($form_state->getValue('tfa_login')))
+         ->set('setup_plugins', array_filter($setup_plugins))
+         ->set('send_plugins', array_filter($send_plugins))
+         ->set('login_plugins', array_filter($login_plugins))
          ->set('validate_plugin', $validate_plugin)
          ->set('fallback_plugins', $fallback_plugins)
          ->save();

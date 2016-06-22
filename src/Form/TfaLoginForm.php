@@ -2,6 +2,7 @@
 
 namespace Drupal\tfa\Form;
 
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\tfa\TfaLoginPluginManager;
 use Drupal\tfa\TfaValidationPluginManager;
@@ -100,6 +101,8 @@ class TfaLoginForm extends UserLoginForm {
     // Similar to tfa_user_login() but not required to force user logout.
     $account = $this->userStorage->load($form_state->get('uid'));
 
+    $tfa_enabled = intval($this->config('tfa.settings')->get('enabled'));
+
     // GetPlugin
     // Pass to service functions.
     $tfaValidationPlugin = $this->tfaValidationManager->getInstance(['uid' => $account->id()]);
@@ -107,11 +110,11 @@ class TfaLoginForm extends UserLoginForm {
 
     // Setup TFA.
     if (isset($tfaValidationPlugin)) {
-      if ($account->hasPermission('require tfa') && !$this->loginComplete($account) && !$this->ready($tfaValidationPlugin)) {
+      if ($account->hasPermission('require tfa') && !$this->loginComplete($account) && !$this->ready($tfaValidationPlugin) && $tfa_enabled) {
         drupal_set_message(t('Login disallowed. You are required to setup two-factor authentication. Please contact a site administrator.'), 'error');
         $form_state->setRedirect('user.page');
       }
-      elseif (!$this->loginComplete($account) && $this->ready($tfaValidationPlugin) && !$this->loginAllowed($account)) {
+      elseif (!$this->loginComplete($account) && $this->ready($tfaValidationPlugin) && !$this->loginAllowed($account) && $tfa_enabled) {
 
         // Restart flood levels, session context, and TFA process.
         // flood_clear_event('tfa_validate');

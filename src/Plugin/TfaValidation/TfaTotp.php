@@ -91,7 +91,7 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
    */
   public function getForm(array $form, FormStateInterface $form_state) {
     $message = 'Verification code is application generated and @length digits long.';
-    if ($this->getFallbacks() && $this->getUserData('tfa', 'tfa_recovery_code')) {
+    if ($this->getUserData('tfa', 'tfa_recovery_code') && $this->getFallbacks()) {
       $message .= '<br/>Can not access your account? Use one of your recovery codes.';
     }
     $form['code']             = array(
@@ -143,7 +143,7 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
     else {
       // Get OTP seed.
       $seed          = $this->getSeed();
-      $this->isValid = ($seed && $this->auth->otp->checkTotp(Base32::decode($seed), $code, $this->timeSkew));
+      $this->isValid = ($seed && $this->auth->otp->checkTotp($seed, $code, $this->timeSkew));
     }
     return $this->isValid;
   }
@@ -207,6 +207,26 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
       }
     }
     return FALSE;
+  }
+
+  /**
+   * Save seed for account.
+   *
+   * @param string $seed
+   *   Un-encrypted seed.
+   */
+  public function storeSeed($seed) {
+    // Encrypt seed for storage.
+    $encrypted = $this->encrypt($seed);
+
+    $record = [
+      'tfa_totp_seed' => [
+        'seed' => Base32::encode($encrypted),
+        'created' => REQUEST_TIME,
+      ],
+    ];
+
+    $this->setUserData('tfa', $record);
   }
 
   /**

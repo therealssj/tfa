@@ -132,9 +132,12 @@ class EntryForm extends FormBase {
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     $validated = $this->tfaValidationPlugin->validateForm($form, $form_state);
-    if (!$validated && $fallback = $this->tfaValidationPlugin->getFallbacks()) {
+    $config = $this->config('tfa.settings');
+    $fallbacks = $config->get('fallback_plugins');
+    if (!$validated && isset($fallbacks[$config->get('validate_plugin')])) {
+      $fallback = key($fallbacks[$config->get('validate_plugin')]);
       $values = $form_state->getValues();
-      $fallback_plugin = $this->tfaValidationManager->createInstance($fallback[0], ['uid' => $values['account']->id()]);
+      $fallback_plugin = $this->tfaValidationManager->createInstance($fallback, ['uid' => $values['account']->id()]);
       $form_state->clearErrors();
       if (!$fallback_plugin->validate($values['code'])) {
         $errors = $fallback_plugin->getErrorMessages();

@@ -1,6 +1,6 @@
 enabled: 0
 secret_key: ''
-time_skew: 3
+time_skew: 30
 recovery_codes_amount: 10
 setup_plugins: { }
 send_plugins: { }
@@ -8,3 +8,4 @@ login_plugins: { }
 validate_plugin: 'tfa_totp'
 fallback_plugins: { }
 help_text: 'Contact support to reset your access'
+name_prefix: ''

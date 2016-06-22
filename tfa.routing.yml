@@ -4,9 +4,10 @@ tfa.entry:
     _form: '\Drupal\tfa\Form\EntryForm'
     _title: 'Two-Factor Authentication'
   requirements:
-    _permission: 'access content'
+      _permission: 'access content'
   options:
     _maintenance_access: TRUE
+
 tfa.settings:
   path: 'admin/config/people/tfa'
   defaults:
@@ -16,6 +17,7 @@ tfa.settings:
     _admin_route: TRUE
   requirements:
     _permission: 'administer site configuration'
+
 tfa.login:
   path: 'tfalogin'
   defaults:
@@ -25,6 +27,7 @@ tfa.login:
     _user_is_logged_in: 'FALSE'
   options:
     _maintenance_access: TRUE
+
 tfa.overview:
   path: 'user/{user}/security/tfa'
   defaults:
@@ -32,6 +35,7 @@ tfa.overview:
     _title: 'Security'
   requirements:
     _permission: 'setup own tfa'
+
 tfa.validation.setup:
   path: 'user/{user}/security/tfa/{method}'
   defaults:
@@ -39,6 +43,7 @@ tfa.validation.setup:
     _title: 'TFA setup'
   requirements:
     _permission: 'setup own tfa'
+
 tfa.disable:
   path: 'user/{user}/security/tfa/disable'
   defaults:

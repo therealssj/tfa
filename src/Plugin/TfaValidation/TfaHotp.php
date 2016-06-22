@@ -97,12 +97,13 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
    */
   public function getForm(array $form, FormStateInterface $form_state) {
     $message = 'Verification code is application generated and @length digits long.';
-    if ($this->getFallbacks() && $this->getUserData('tfa', 'tfa_recovery_code')) {
+    if ($this->getUserData('tfa', 'tfa_recovery_code') && $this->getFallbacks()) {
       $message .= '<br/>Can not access your account? Use one of your recovery codes.';
     }
     $form['code']             = array(
       '#type'        => 'textfield',
       '#title'       => t('Application verification code'),
+      '#description' => t($message, array('@length' => $this->codeLength)),
       '#required'    => TRUE,
       '#attributes'  => array('autocomplete' => 'off'),
     );
@@ -148,7 +149,7 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
       // Get OTP seed.
       $seed          = $this->getSeed();
       $counter       = $this->getHotpCounter();
-      $this->isValid = ($seed && ($counter = $this->auth->otp->checkHotpResync(Base32::decode($seed), ++$counter, $code)));
+      $this->isValid = ($seed && ($counter = $this->auth->otp->checkHotpResync($seed, ++$counter, $code)));
       $this->setUserData('tfa', ['tfa_hotp_counter' => $counter]);
     }
     return $this->isValid;
@@ -216,6 +217,26 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
   }
 
   /**
+   * Save seed for account.
+   *
+   * @param string $seed
+   *   Un-encrypted seed.
+   */
+  public function storeSeed($seed) {
+    // Encrypt seed for storage.
+    $encrypted = $this->encrypt($seed);
+
+    $record = [
+      'tfa_hotp_seed' => [
+        'seed' => Base32::encode($encrypted),
+        'created' => REQUEST_TIME,
+      ],
+    ];
+
+    $this->setUserData('tfa', $record);
+  }
+
+  /**
    * Delete the seed of the current validated user.
    */
   public function deleteSeed() {
@@ -272,7 +293,7 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
    *   The current value of the HOTP counter, or 1 if no value was found
    */
   public function getHotpCounter() {
-    $result = ($this->getUserData('tfa', 'tfa_hotp_counter')) ?: 1;
+    $result = ($this->getUserData('tfa', 'tfa_hotp_counter')) ?: -1;
 
     return $result;
   }
