@@ -90,8 +90,7 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
    */
   public function getForm(array $form, FormStateInterface $form_state) {
     $message = 'Verification code is application generated and @length digits long.';
-    $uid = $this->configuration['uid'];
-    if ($this->getUserData('tfa', 'tfa_recovery_code', $uid, $this->userData) && $this->getFallbacks()) {
+    if ($this->getUserData('tfa', 'tfa_recovery_code', $this->uid, $this->userData) && $this->getFallbacks()) {
       $message .= '<br/>Can not access your account? Use one of your recovery codes.';
     }
     $form['code']             = array(

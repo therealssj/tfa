@@ -62,7 +62,7 @@ class BasicOverview extends FormBase {
 
     if (!empty($user_tfa)) {
       $date_formatter = \Drupal::service('date.formatter');
-      if ($enabled && isset($user_tfa['data'][$configuration->validate_plugin])) {
+      if ($enabled && !empty($user_tfa['data']['plugins'])) {
         $status_text = t('Status: <strong>TFA enabled</strong>, set @time. <a href=":url">Disable TFA</a>', array(
           '@time' => $date_formatter->format($user_tfa['saved']),
           ':url'  => URL::fromRoute('tfa.disable', ['user' => $user->id()])->toString(),

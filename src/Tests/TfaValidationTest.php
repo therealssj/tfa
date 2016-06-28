@@ -2,6 +2,7 @@
 
 namespace Drupal\tfa\Tests;
 
+use Base32\Base32;
 use Drupal\simpletest\WebTestBase;
 use Otp\GoogleAuthenticator;
 use Otp\Otp;
@@ -37,7 +38,7 @@ class TfaValidationTest extends WebTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['tfa'];
+  public static $modules = ['tfa', 'node'];
 
   /**
    * {@inheritdoc}
@@ -58,7 +59,7 @@ class TfaValidationTest extends WebTestBase {
    */
   public function testTfaTotp() {
     // Setup validation plugin.
-    $account = $this->drupalCreateUser(['require tfa']);
+    $account = $this->drupalCreateUser(['require tfa', 'access content']);
     $plugin = 'tfa_totp';
     $this->config('tfa.settings')
          ->set('enabled', 1)
@@ -89,7 +90,7 @@ class TfaValidationTest extends WebTestBase {
 
     // Try valid code.
     // Generate a code.
-    $code = $this->auth->otp->totp(self::$seed);
+    $code = $this->auth->otp->totp(Base32::decode(self::$seed));
     $edit = array(
       'code' => $code,
     );
@@ -123,7 +124,7 @@ class TfaValidationTest extends WebTestBase {
    */
   public function testTfaHotp() {
     // Setup validation plugin.
-    $account = $this->drupalCreateUser(['require tfa']);
+    $account = $this->drupalCreateUser(['require tfa', 'access content']);
     $plugin = 'tfa_hotp';
     $this->config('tfa.settings')
          ->set('enabled', 1)
@@ -154,7 +155,7 @@ class TfaValidationTest extends WebTestBase {
 
     // Try valid code.
     // Generate a code.
-    $code = $this->auth->otp->hotp(self::$seed, 1);
+    $code = $this->auth->otp->hotp(Base32::decode(self::$seed), 1);
     $edit = array(
       'code' => $code,
     );
@@ -189,7 +190,7 @@ class TfaValidationTest extends WebTestBase {
    */
   public function testFallback() {
     // Setup validation plugin.
-    $account = $this->drupalCreateUser(['require tfa']);
+    $account = $this->drupalCreateUser(['require tfa', 'access content']);
     $plugin = 'tfa_totp';
     $fallback_plugin = 'tfa_recovery_code';
     $fallback_plugin_config = [

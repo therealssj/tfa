@@ -92,7 +92,7 @@ trait TfaDataTrait {
     if (isset($existing['validation_skipped']) && !isset($data['validation_skipped'])) {
       $data['validation_skipped'] = $existing['validation_skipped'];
     }
-    else{
+    else {
       $validation_skipped = isset($data['validation_skipped']) ? $data['validation_skipped'] : 0;
     }
 

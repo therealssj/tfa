@@ -40,7 +40,7 @@ tfa.settings:
       type: string
       label: 'Current validation plugin'
     validation_skip:
-      type: int
+      type: integer
       label: 'No. of times a user without tfa validation set-up can login.'
     help_text:
       type: string

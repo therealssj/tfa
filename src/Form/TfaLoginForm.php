@@ -131,7 +131,7 @@ class TfaLoginForm extends UserLoginForm {
       if ($account->hasPermission('require tfa') && !$this->loginComplete($account) && !$this->ready($tfaValidationPlugin) && $tfa_enabled) {
         $tfa_data = $this->tfaGetTfaData($account->id(), $this->userData);
         $validation_skipped = (isset($tfa_data['validation_skipped'])) ? $tfa_data['validation_skipped'] : 0;
-        if ($allowed_skips && ($left = $allowed_skips - ++$validation_skipped) >= 0 ) {
+        if ($allowed_skips && ($left = $allowed_skips - ++$validation_skipped) >= 0) {
           $tfa_data['validation_skipped'] = $validation_skipped;
           drupal_set_message(t('You are required to setup two-factor authentication. You have @skipped attempts left after this you will be unable to login.', ['@skipped' => $left]), 'error');
           $this->tfaSaveTfaData($account->id(), $this->userData, $tfa_data);
