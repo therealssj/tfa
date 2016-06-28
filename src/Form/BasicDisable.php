@@ -6,6 +6,7 @@ use Drupal\Component\Plugin\PluginManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\tfa\Plugin\TfaValidation\TfaTotp;
+use Drupal\tfa\TfaDataTrait;
 use Drupal\user\Entity\User;
 use Drupal\user\UserDataInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -14,6 +15,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * TFA disable form router.
  */
 class BasicDisable extends FormBase {
+  use TfaDataTrait;
   /**
    * The plugin manager to fetch plugin information.
    *
@@ -60,32 +62,26 @@ class BasicDisable extends FormBase {
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'tfa_basic_disable';
+    return 'tfa_disable';
   }
 
   /**
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, User $user = NULL) {
-    $account = User::load(\Drupal::currentUser()->id());
+    $account = User::load($this->currentUser()->id());
 
     $storage = $form_state->getStorage();
     $storage['account'] = $user;
 
+    // @todo Check require permissions and give warning about being locked out.
     if ($account->id() != $user->id() && $account->hasPermission('administer users')) {
       $preamble_desc = t('Are you sure you want to disable TFA on account %name?', array('%name' => $user->getUsername()));
       $notice_desc = t('TFA settings and data will be lost. %name can re-enable TFA again from their profile.', array('%name' => $user->getUsername()));
-      if (tfa_basic_tfa_required($account)) {
-        drupal_set_message(t("This account is required to have TFA enabled per the 'require TFA' permission on one of their roles. Disabling TFA will remove their ability to log back into the site. If you continue, consider also removing the role so they can authenticate and setup TFA again."), 'warning');
-      }
     }
     else {
       $preamble_desc = t('Are you sure you want to disable your two-factor authentication setup?');
       $notice_desc = t("Your settings and data will be lost. You can re-enable two-factor authentication again from your profile.");
-      if (tfa_basic_tfa_required($account)) {
-        drupal_set_message(t('Your account must have at least one two-factor authentication method enabled. Continuing will disable your ability to log back into this site.'), 'warning');
-        $notice_desc = t('Your settings and data will be lost and you will be unable to log back into the site. To regain access contact a site administrator.');
-      }
     }
     $form['preamble'] = array(
       '#prefix' => '<p class="preamble">',
@@ -130,7 +126,7 @@ class BasicDisable extends FormBase {
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    $user = User::load(\Drupal::currentUser()->id());
+    $user = User::load($this->currentUser()->id());
     $storage = $form_state->getStorage();
     $account = $storage['account'];
     // Allow administrators to disable TFA for another account.
@@ -157,7 +153,7 @@ class BasicDisable extends FormBase {
       $form_state->setRedirect('tfa.overview', ['user' => $account->id()]);
       return;
     }
-    tfa_setup_save_data($account, array('status' => FALSE));
+    $this->tfaSaveTfaData($account->id(), $this->userData, array('status' => FALSE));
 
     // @todo Need to make this part generic
     // Delete OTP Seed.
@@ -172,7 +168,7 @@ class BasicDisable extends FormBase {
       $fallback_plugin->deleteCodes();
     }
 
-    \Drupal::logger('tfa_basic')->notice('TFA disabled for user @name UID @uid', array(
+    \Drupal::logger('tfa')->notice('TFA disabled for user @name UID @uid', array(
       '@name' => $account->getUsername(),
       '@uid' => $account->id(),
     ));

@@ -9,3 +9,4 @@ validate_plugin: 'tfa_totp'
 fallback_plugins: { }
 help_text: 'Contact support to reset your access'
 name_prefix: ''
+validation_skip: 3

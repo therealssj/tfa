@@ -53,6 +53,13 @@ abstract class TfaBasePlugin extends PluginBase {
   protected $userData;
 
   /**
+   * The user id.
+   *
+   * @var int
+   */
+  protected $uid;
+
+  /**
    * Constructs a new Tfa plugin object.
    *
    * @param array $configuration
@@ -72,6 +79,7 @@ abstract class TfaBasePlugin extends PluginBase {
 
     // User Data service to store user-based data in key value pairs.
     $this->userData = $user_data;
+    $this->uid = $this->configuration['uid'];
   }
 
   /**

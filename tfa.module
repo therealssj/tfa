@@ -21,76 +21,11 @@ function tfa_help($route_name, RouteMatchInterface $route_match) {
       $output .= '<h3>' . t('About') . '</h3>';
       $output .= '<p>' . t('Pluggable provider of second factor authentication for Drupal') . '</p>';
       return $output;
-
-    break;
   }
 }
 
-/**
- * Get TFA data for an account.
- *
- * @param object $uid
- *   User account.
- *
- * @return array
- *   TFA data.
- */
-function tfa_get_tfa_data($uid) {
-  $result = \Drupal::service('user.data')->get('tfa', $uid, 'tfa_user_settings');
-  if (!empty($result)) {
-    $data = $result['data'];
-    $tfa = array(
-      'status' => $result['status'] == '1' ? TRUE : FALSE,
-      'saved' => $result['saved'],
-      'data' => $data,
-    );
-    return $tfa;
-  }
-  return array();
-}
 
-/**
- * Save TFA settings for an account.
- *
- * @param object $account
- *   The user account.
- * @param array $data
- *   Data to be saved.
- */
-function tfa_setup_save_data($account, $data = array()) {
-  // Check if existing data and update.
-  $existing = tfa_get_tfa_data($account->id());
-  if (!empty($existing['data'])) {
-    $tfa_data = $existing['data'];
-  }
-  else {
-    $tfa_data = array(
-      'plugins' => '',
-      'sms' => FALSE,
-    );
-  }
-  if (isset($data['plugins'])) {
-    $tfa_data['plugins'] = $data['plugins'];
-  }
-  if (isset($data['sms'])) {
-    $tfa_data['sms'] = $data['sms'];
-  }
-  $status = 1;
-  if (isset($data['status']) && $data['status'] === FALSE) {
-    $tfa_data = array();
-    $status = 0;
-  }
-
-  $record = array(
-    'saved' => REQUEST_TIME,
-    'status' => $status,
-    'data' => $tfa_data,
-  );
-
-  \Drupal::service('user.data')->set('tfa', $account->id(), 'tfa_user_settings', $record);
-
-}
-
+// @todo Not sure about the following functions. Left here for future reference.
 /**
  * Implements hook_user_login()
  *

@@ -5,6 +5,7 @@ namespace Drupal\tfa\Form;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\tfa\TfaDataTrait;
 use Drupal\tfa\TfaLoginPluginManager;
 use Drupal\tfa\TfaSendPluginManager;
 use Drupal\tfa\TfaSetupPluginManager;
@@ -16,6 +17,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * The admin configuration page.
  */
 class SettingsForm extends ConfigFormBase {
+  use TfaDataTrait;
 
   /**
    * The login plugin manager to fetch plugin information.
@@ -234,6 +236,14 @@ class SettingsForm extends ConfigFormBase {
       }
     }
 
+    $form['validation_skip'] = [
+      '#type' => 'textfield',
+      '#title' => t('Skip Validation'),
+      '#default_value' => ($config->get('validation_skip')) ?: 2,
+      '#size' => 2,
+      '#states' => $enabled_state,
+    ];
+
     // Enable login plugins.
     if (count($login_plugins)) {
       $login_form_array = array();
@@ -325,6 +335,7 @@ class SettingsForm extends ConfigFormBase {
          ->set('login_plugins', array_filter($login_plugins))
          ->set('validate_plugin', $validate_plugin)
          ->set('fallback_plugins', $fallback_plugins)
+         ->set('validation_skip', $form_state->getValue('validation_skip'))
          ->save();
 
     parent::submitForm($form, $form_state);

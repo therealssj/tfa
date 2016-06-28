@@ -6,6 +6,7 @@ use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\tfa\Plugin\TfaBasePlugin;
 use Drupal\tfa\Plugin\TfaValidationInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\tfa\TfaDataTrait;
 use Drupal\user\UserDataInterface;
 use Otp\GoogleAuthenticator;
 use Otp\Otp;
@@ -22,6 +23,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
   use DependencySerializationTrait;
+  use TfaDataTrait;
+
   /**
    * Object containing the external validation library.
    *
@@ -127,7 +130,7 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
     //    }
     //  }
     // }.
-    $codes = $this->getUserData('tfa', 'tfa_recovery_code') ?: [];
+    $codes = $this->getUserData('tfa', 'tfa_recovery_code', $this->uid, $this->userData) ?: [];
     array_walk($codes, function(&$v, $k) {
       $v = $this->decrypt($v);
     });
@@ -149,7 +152,7 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
     });
     $data = ['tfa_recovery_code' => $codes];
 
-    $this->setUserData('tfa', $data);
+    $this->setUserData('tfa', $data, $this->uid, $this->userData);
 
     // $message = 'Saved recovery codes for user %uid';
     // if ($num_deleted) {
@@ -163,7 +166,7 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
    */
   public function deleteCodes() {
     // Delete any existing codes.
-    $this->deleteUserData('tfa', 'tfa_recovery_code');
+    $this->deleteUserData('tfa', 'tfa_recovery_code', $this->uid, $this->userData);
   }
 
   /**
@@ -207,42 +210,6 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
    */
   public function getErrorMessages() {
     return $this->errorMessages;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function setUserData($module, array $data) {
-    $this->userData->set(
-      $module,
-      $this->configuration['uid'],
-      key($data),
-      current($data)
-    );
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getUserData($module, $key) {
-    $result = $this->userData->get(
-      $module,
-      $this->configuration['uid'],
-      $key
-    );
-
-    return $result;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function deleteUserData($module, $key) {
-    $this->userData->delete(
-      $module,
-      $this->configuration['uid'],
-      $key
-    );
   }
 
 }

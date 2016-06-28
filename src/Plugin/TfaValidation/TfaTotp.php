@@ -8,6 +8,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Site\Settings;
 use Drupal\tfa\Plugin\TfaBasePlugin;
 use Drupal\tfa\Plugin\TfaValidationInterface;
+use Drupal\tfa\TfaDataTrait;
 use Drupal\user\UserDataInterface;
 use Otp\GoogleAuthenticator;
 use Otp\Otp;
@@ -27,6 +28,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
   use DependencySerializationTrait;
+  use TfaDataTrait;
+
   /**
    * Object containing the external validation library.
    *
@@ -61,10 +64,6 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
     // Recommended: set variable tfa_totp_secret_key in settings.php.
     $this->encryptionKey   = \Drupal::config('tfa.settings')->get('secret_key');
     $this->alreadyAccepted = FALSE;
-
-    // User Data service to store user-based data in key value pairs.
-    $this->userData = $user_data;
-
   }
 
   /**
@@ -91,7 +90,7 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
    */
   public function getForm(array $form, FormStateInterface $form_state) {
     $message = 'Verification code is application generated and @length digits long.';
-    if ($this->getUserData('tfa', 'tfa_recovery_code') && $this->getFallbacks()) {
+    if ($this->getUserData('tfa', 'tfa_recovery_code', $this->uid, $this->userData) && $this->getFallbacks()) {
       $message .= '<br/>Can not access your account? Use one of your recovery codes.';
     }
     $form['code']             = array(
@@ -143,7 +142,7 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
     else {
       // Get OTP seed.
       $seed          = $this->getSeed();
-      $this->isValid = ($seed && $this->auth->otp->checkTotp($seed, $code, $this->timeSkew));
+      $this->isValid = ($seed && $this->auth->otp->checkTotp(Base32::decode($seed), $code, $this->timeSkew));
     }
     return $this->isValid;
   }
@@ -162,7 +161,7 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
     // Store the hash made using the code in users_data.
     // @todo Use the request time to say something like 'code was requested at ..'?
     $store_data = ['tfa_accepted_code_' . $hash => REQUEST_TIME];
-    $this->setUserData('tfa', $store_data);
+    $this->setUserData('tfa', $store_data, $this->uid, $this->userData);
   }
 
   /**
@@ -179,7 +178,7 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
 
     // Check if the code has already been used or not.
     $key    = 'tfa_accepted_code_' . $hash;
-    $result = $this->getUserData('tfa', $key);
+    $result = $this->getUserData('tfa', $key, $this->uid, $this->userData);
 
     if (!empty($result)) {
       $this->alreadyAccepted = TRUE;
@@ -197,10 +196,9 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
    */
   protected function getSeed() {
     // Lookup seed for account and decrypt.
-    $uid    = $this->configuration['uid'];
-    $result = $this->getUserData('tfa', 'tfa_totp_seed');
+    $result = $this->getUserData('tfa', 'tfa_totp_seed', $this->uid, $this->userData);
     if (!empty($result)) {
-      $encrypted = Base32::decode($result['seed']);
+      $encrypted = base64_decode($result['seed']);
       $seed      = $this->decrypt($encrypted);
       if (!empty($seed)) {
         return $seed;
@@ -221,12 +219,12 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
 
     $record = [
       'tfa_totp_seed' => [
-        'seed' => Base32::encode($encrypted),
+        'seed' => base64_encode($encrypted),
         'created' => REQUEST_TIME,
       ],
     ];
 
-    $this->setUserData('tfa', $record);
+    $this->setUserData('tfa', $record, $this->uid, $this->userData);
   }
 
   /**
@@ -235,7 +233,7 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
   public function deleteSeed() {
     // @todo needs further evalutation and put in base class possibly
     // maybe make the data key an annotation and fetch it from there
-    $this->deleteUserData('tfa', 'tfa_totp_seed');
+    $this->deleteUserData('tfa', 'tfa_totp_seed', $this->uid, $this->userData);
   }
 
   /**
@@ -243,42 +241,6 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
    */
   public function getFallbacks() {
     return ($this->pluginDefinition['fallbacks']) ?: '';
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function setUserData($module, array $data) {
-    $this->userData->set(
-      $module,
-      $this->configuration['uid'],
-      key($data),
-      current($data)
-    );
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getUserData($module, $key) {
-    $result = $this->userData->get(
-      $module,
-      $this->configuration['uid'],
-      $key
-    );
-
-    return $result;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function deleteUserData($module, $key) {
-    $this->userData->delete(
-      $module,
-      $this->configuration['uid'],
-      $key
-    );
   }
 
 }

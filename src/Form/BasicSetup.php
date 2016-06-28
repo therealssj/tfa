@@ -5,6 +5,7 @@ namespace Drupal\tfa\Form;
 use Drupal\Component\Plugin\PluginManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\tfa\TfaDataTrait;
 use Drupal\tfa\TfaSetup;
 use Drupal\user\Entity\User;
 use Drupal\user\UserDataInterface;
@@ -14,6 +15,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * TFA setup form router.
  */
 class BasicSetup extends FormBase {
+  use TfaDataTrait;
+
   /**
    * The TfaSetupPluginManager.
    *
@@ -50,7 +53,7 @@ class BasicSetup extends FormBase {
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'tfa_basic_setup';
+    return 'tfa_setup';
   }
 
   /**
@@ -58,13 +61,13 @@ class BasicSetup extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state, User $user = NULL, $method = 'tfa_totp') {
     $plugin_definitions = $this->manager->getDefinitions();
-    $account = User::load(\Drupal::currentUser()->id());
+    $account = User::load($this->currentUser()->id());
 
     $form['account'] = array(
       '#type' => 'value',
       '#value' => $user,
     );
-    $tfa_data = tfa_get_tfa_data($user->id());
+    $tfa_data = $this->tfaGetTfaData($user->id(), $this->userData);
     $enabled = isset($tfa_data['status']) && $tfa_data['status'] ? TRUE : FALSE;
 
     $storage = $form_state->getStorage();
@@ -100,7 +103,7 @@ class BasicSetup extends FormBase {
       );
     }
     else {
-      // Need to deprecate
+      // @todo Needs to be fixed. Use case would be multiple fallbacks.
       // if (!$enabled && empty($storage['steps'])) {
       // $storage['full_setup'] = TRUE;
       // $steps = $this->_tfa_basic_full_setup_steps($method);
@@ -124,60 +127,11 @@ class BasicSetup extends FormBase {
       $storage[$method] = $tfa_setup;
       // Deprecate this approach. Left here for future reference
       // switch ($method) {
-      //  case 'tfa_totp':
-      //    $form['#title'] = t('TFA TOTP setup - Application');
-      //    $setup_plugin = new TfaTotpSetup(
-      //    // @todo what comes under configuration?
-      //      ['uid' => $account->id()],
-      //      $plugin_definition['id'],
-      //      $plugin_definition,
-      //      $this->userData
-      //    );
-      //    $tfa_setup = new TfaSetup($setup_plugin);
-      //
-      //    if (!empty($tfa_data)) {
-      //      $form['disclaimer'] = array(
-      //        '#type' => 'markup',
-      //        '#markup' => '<p>' . t('Note: You should delete the old account in your mobile or desktop app before adding this new one.') . '</p>',
-      //      );
-      //    }
-      //    $form = $tfa_setup->getForm($form, $form_state);
-      //    $storage[$method] = $tfa_setup;
-      //    break;
-      //
-      //  case 'tfa_hotp':
-      //    $form['#title'] = t('TFA HOTP setup - Application');
-      //    $setup_plugin = new TfaHotpSetup(
-      //    // @todo what comes under configuration?
-      //      ['uid' => $account->id()],
-      //      $plugin_definition['id'],
-      //      $plugin_definition,
-      //      $this->userData
-      //    );
-      //    $tfa_setup = new TfaSetup($setup_plugin);
-      //
-      //    if (!empty($tfa_data)) {
-      //      $form['disclaimer'] = array(
-      //        '#type' => 'markup',
-      //        '#markup' => '<p>' . t('Note: You should delete the old account in your mobile or desktop app before adding this new one.') . '</p>',
-      //      );
-      //    }
-      //    $form = $tfa_setup->getForm($form, $form_state);
-      //    $storage[$method] = $tfa_setup;
-      //    break;
       //
       //  case 'tfa_basic_trusted_browser':
       //    $context['setup_context'] = ['plugin_definition' => $plugin_definition];
       //    $form['#title'] = t('TFA setup - Trusted browsers');
       //    $setup_plugin = new TfaTrustedBrowserSetup($context);
-      //    $tfa_setup = new TfaSetup($setup_plugin);
-      //    $form = $tfa_setup->getForm($form, $form_state);
-      //    $storage[$method] = $tfa_setup;
-      //    break;
-      //
-      //  case 'tfa_recovery_code':
-      //    $form['#title'] = t('TFA setup - Recovery codes');
-      //    $setup_plugin = new TfaBasicRecoveryCodeSetup($context);
       //    $tfa_setup = new TfaSetup($setup_plugin);
       //    $form = $tfa_setup->getForm($form, $form_state);
       //    $storage[$method] = $tfa_setup;
@@ -282,7 +236,7 @@ class BasicSetup extends FormBase {
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    $user = User::load(\Drupal::currentUser()->id());
+    $user = User::load($this->currentUser()->id());
     $storage = $form_state->getStorage();
     $values = $form_state->getValues();
     $account = $form['account']['#value'];
@@ -376,7 +330,7 @@ class BasicSetup extends FormBase {
     }
     // Disabling SMS delivery.
     if (isset($values['sms_disable']) && $values['op'] === $values['sms_disable']) {
-      tfa_setup_save_data($account, array('sms' => FALSE));
+      $this->tfaSaveTfaData($account->id(), $this->userData, array('sms' => FALSE));
       drupal_set_message(t('TFA SMS delivery disabled.'));
       $form_state['redirect'] = 'user/' . $account->id() . '/security/tfa';
       \Drupal::logger('tfa_basic')->info('TFA SMS disabled for user @name UID @uid', array(
@@ -399,7 +353,7 @@ class BasicSetup extends FormBase {
 
       // Trigger multi-step if in full setup.
       if (!empty($storage['full_setup'])) {
-        $this->_tfa_basic_set_next_step($form_state, $method, $skipped_method);
+        $this->tfaNextSetupStep($form_state, $method, $skipped_method);
       }
 
       // Plugin form submit.
@@ -421,7 +375,7 @@ class BasicSetup extends FormBase {
         if ($storage['sms_number'] !== tfa_basic_get_mobile_number($account)) {
           tfa_basic_set_mobile_number($account, $storage['sms_number']);
         }
-        tfa_setup_save_data($account, array('sms' => TRUE));
+        $this->tfaSaveTfaData($account->id(), $this->userData, array('sms' => TRUE));
       }
 
       // Return if multi-step.
@@ -438,7 +392,7 @@ class BasicSetup extends FormBase {
         //  'plugins' => array_diff($storage['steps'], $storage['steps_skipped']),
         // );.
         $data = ['plugins' => $storage['step_method']];
-        tfa_setup_save_data($account, $data);
+        $this->tfaSaveTfaData($account->id(), $this->userData, $data);
         \Drupal::logger('tfa_basic')->info('TFA enabled for user @name UID @uid',
           array(
             '@name' => $account->getUsername(),
@@ -453,9 +407,9 @@ class BasicSetup extends FormBase {
   }
 
   /**
-   * Steps eligble for TFA Basic setup.
+   * Steps eligble for TFA setup.
    */
-  private function _tfa_basic_full_setup_steps() {
+  private function tfaFullSetupSteps() {
     $steps = array();
     $plugins = array(
       'tfa_totp',
@@ -463,7 +417,7 @@ class BasicSetup extends FormBase {
       'tfa_basic_trusted_browser',
       'tfa_recovery_code',
     );
-    $config = \Drupal::config('tfa_basic.settings');
+    $config = $this->config('tfa_basic.settings');
     foreach ($plugins as $plugin) {
       if ($plugin === $config->get('tfa_validate_plugin', '') ||
         in_array($plugin, $config->get('fallback_plugins', array())) ||
@@ -477,7 +431,8 @@ class BasicSetup extends FormBase {
   /**
    * Set form rebuild, next step, and message if any plugin steps left.
    */
-  private function _tfa_basic_set_next_step(FormStateInterface &$form_state, $this_step, $skipped_step = FALSE) {
+  private function tfaNextSetupStep(FormStateInterface &$form_state, $this_step, $skipped_step = FALSE) {
+    // @todo This needs to be refactored to make it dynamic.
     $storage = $form_state->getStorage();
     // Remove this step from steps left.
     $storage['steps_left'] = array_diff($storage['steps_left'], array($this_step));
