@@ -46,37 +46,4 @@ interface TfaValidationInterface {
    */
   public function getFallbacks();
 
-  /**
-   * Store user specific information.
-   *
-   * @param string $module
-   *   The name of the module the data is associated with.
-   * @param array $data
-   *   The value to store. Non-scalar values are serialized automatically.
-   */
-  public function setUserData($module, array $data);
-
-  /**
-   * Returns data stored for the current validated user account.
-   *
-   * @param string $key
-   *   The name of the data key.
-   * @param string $module
-   *   The name of the module the data is associated with.
-   *
-   * @return mixed|array
-   *   The stored value is returned, or NULL if no value was found.
-   */
-  public function getUserData($key, $module);
-
-  /**
-   * Deletes data stored for the current validated user account.
-   *
-   * @param string $key
-   *   The name of the data key.
-   * @param string $module
-   *   The name of the module the data is associated with.
-   */
-  public function deleteUserData($key, $module);
-
 }

@@ -21,11 +21,11 @@ function tfa_help($route_name, RouteMatchInterface $route_match) {
       $output .= '<h3>' . t('About') . '</h3>';
       $output .= '<p>' . t('Pluggable provider of second factor authentication for Drupal') . '</p>';
       return $output;
-
-    break;
   }
 }
 
+
+// @todo Not sure about the following functions. Left here for future reference.
 /**
  * Implements hook_user_login()
  *

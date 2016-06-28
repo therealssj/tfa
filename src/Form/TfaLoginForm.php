@@ -2,23 +2,26 @@
 
 namespace Drupal\tfa\Form;
 
-use Drupal\Core\Session\AccountInterface;
-use Drupal\tfa\TfaLoginPluginManager;
-use Drupal\tfa\TfaValidationPluginManager;
-use Drupal\user\Form\UserLoginForm;
+use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Flood\FloodInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\RendererInterface;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\tfa\Plugin\TfaValidationInterface;
+use Drupal\tfa\TfaDataTrait;
+use Drupal\tfa\TfaLoginPluginManager;
+use Drupal\tfa\TfaValidationPluginManager;
+use Drupal\user\Form\UserLoginForm;
 use Drupal\user\UserAuthInterface;
+use Drupal\user\UserDataInterface;
 use Drupal\user\UserStorageInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\tfa\Plugin\TfaValidationInterface;
-use Drupal\Component\Utility\Crypt;
 
 /**
  * TFA user login form.
  */
 class TfaLoginForm extends UserLoginForm {
+  use TfaDataTrait;
 
   /**
    * The validation plugin manager to fetch plugin information.
@@ -49,7 +52,14 @@ class TfaLoginForm extends UserLoginForm {
   protected $tfaLoginPlugins;
 
   /**
-   * Constructs a new UserLoginForm.
+   * The user data service.
+   *
+   * @var \Drupal\user\UserDataInterface
+   */
+  protected $userData;
+
+  /**
+   * Constructs a new user login form.
    *
    * @param \Drupal\Core\Flood\FloodInterface $flood
    *   The flood service.
@@ -59,11 +69,18 @@ class TfaLoginForm extends UserLoginForm {
    *   The user authentication object.
    * @param \Drupal\Core\Render\RendererInterface $renderer
    *   The renderer.
+   * @param \Drupal\tfa\TfaValidationPluginManager $tfa_validation_manager
+   *   Tfa validation plugin manager.
+   * @param \Drupal\tfa\TfaLoginPluginManager $tfa_plugin_manager
+   *   Tfa setup plugin manager.
+   * @param \Drupal\user\UserDataInterface $user_data
+   *   User data service.
    */
-  public function __construct(FloodInterface $flood, UserStorageInterface $user_storage, UserAuthInterface $user_auth, RendererInterface $renderer, TfaValidationPluginManager $tfa_validation_manager, TfaLoginPluginManager $tfa_plugin_manager) {
+  public function __construct(FloodInterface $flood, UserStorageInterface $user_storage, UserAuthInterface $user_auth, RendererInterface $renderer, TfaValidationPluginManager $tfa_validation_manager, TfaLoginPluginManager $tfa_plugin_manager, UserDataInterface $user_data) {
     parent::__construct($flood, $user_storage, $user_auth, $renderer);
     $this->tfaValidationManager = $tfa_validation_manager;
     $this->tfaLoginManager = $tfa_plugin_manager;
+    $this->userData = $user_data;
   }
 
   /**
@@ -76,7 +93,8 @@ class TfaLoginForm extends UserLoginForm {
       $container->get('user.auth'),
       $container->get('renderer'),
       $container->get('plugin.manager.tfa.validation'),
-      $container->get('plugin.manager.tfa.login')
+      $container->get('plugin.manager.tfa.login'),
+      $container->get('user.data')
     );
   }
 
@@ -100,6 +118,9 @@ class TfaLoginForm extends UserLoginForm {
     // Similar to tfa_user_login() but not required to force user logout.
     $account = $this->userStorage->load($form_state->get('uid'));
 
+    $tfa_enabled = intval($this->config('tfa.settings')->get('enabled'));
+    $allowed_skips = intval($this->config('tfa.settings')->get('validation_skip'));
+
     // GetPlugin
     // Pass to service functions.
     $tfaValidationPlugin = $this->tfaValidationManager->getInstance(['uid' => $account->id()]);
@@ -107,11 +128,22 @@ class TfaLoginForm extends UserLoginForm {
 
     // Setup TFA.
     if (isset($tfaValidationPlugin)) {
-      if ($account->hasPermission('require tfa') && !$this->loginComplete($account) && !$this->ready($tfaValidationPlugin)) {
-        drupal_set_message(t('Login disallowed. You are required to setup two-factor authentication. Please contact a site administrator.'), 'error');
-        $form_state->setRedirect('user.page');
+      if ($account->hasPermission('require tfa') && !$this->loginComplete($account) && !$this->ready($tfaValidationPlugin) && $tfa_enabled) {
+        $tfa_data = $this->tfaGetTfaData($account->id(), $this->userData);
+        $validation_skipped = (isset($tfa_data['validation_skipped'])) ? $tfa_data['validation_skipped'] : 0;
+        if ($allowed_skips && ($left = $allowed_skips - ++$validation_skipped) >= 0 ) {
+          $tfa_data['validation_skipped'] = $validation_skipped;
+          drupal_set_message(t('You are required to setup two-factor authentication. You have @skipped attempts left after this you will be unable to login.', ['@skipped' => $left]), 'error');
+          $this->tfaSaveTfaData($account->id(), $this->userData, $tfa_data);
+          user_login_finalize($account);
+          $form_state->setRedirect('<front>');
+        }
+        else {
+          drupal_set_message(t('Login disallowed. You are required to setup two-factor authentication. Please contact a site administrator.'), 'error');
+          $form_state->setRedirect('user.page');
+        }
       }
-      elseif (!$this->loginComplete($account) && $this->ready($tfaValidationPlugin) && !$this->loginAllowed($account)) {
+      elseif (!$this->loginComplete($account) && $this->ready($tfaValidationPlugin) && !$this->loginAllowed($account) && $tfa_enabled) {
 
         // Restart flood levels, session context, and TFA process.
         // flood_clear_event('tfa_validate');

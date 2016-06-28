@@ -8,6 +8,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Site\Settings;
 use Drupal\tfa\Plugin\TfaBasePlugin;
 use Drupal\tfa\Plugin\TfaValidationInterface;
+use Drupal\tfa\TfaDataTrait;
 use Drupal\user\UserDataInterface;
 use Otp\GoogleAuthenticator;
 use Otp\Otp;
@@ -27,6 +28,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
   use DependencySerializationTrait;
+  use TfaDataTrait;
 
   /**
    * Object containing the external validation library.
@@ -34,13 +36,6 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
    * @var GoogleAuthenticator
    */
   protected $auth;
-
-  /**
-   * Provides the user data service object.
-   *
-   * @var \Drupal\user\UserDataInterface
-   */
-  protected $userData;
 
   /**
    * The time-window in which the validation should be done.
@@ -69,8 +64,6 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
     // Recommended: set variable tfa_totp_secret_key in settings.php.
     $this->encryptionKey   = \Drupal::config('tfa.settings')->get('secret_key');
     $this->alreadyAccepted = FALSE;
-
-    $this->userData = $user_data;
   }
 
   /**
@@ -97,12 +90,14 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
    */
   public function getForm(array $form, FormStateInterface $form_state) {
     $message = 'Verification code is application generated and @length digits long.';
-    if ($this->getFallbacks() && $this->getUserData('tfa', 'tfa_recovery_code')) {
+    $uid = $this->configuration['uid'];
+    if ($this->getUserData('tfa', 'tfa_recovery_code', $uid, $this->userData) && $this->getFallbacks()) {
       $message .= '<br/>Can not access your account? Use one of your recovery codes.';
     }
     $form['code']             = array(
       '#type'        => 'textfield',
       '#title'       => t('Application verification code'),
+      '#description' => t($message, array('@length' => $this->codeLength)),
       '#required'    => TRUE,
       '#attributes'  => array('autocomplete' => 'off'),
     );
@@ -149,7 +144,7 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
       $seed          = $this->getSeed();
       $counter       = $this->getHotpCounter();
       $this->isValid = ($seed && ($counter = $this->auth->otp->checkHotpResync(Base32::decode($seed), ++$counter, $code)));
-      $this->setUserData('tfa', ['tfa_hotp_counter' => $counter]);
+      $this->setUserData('tfa', ['tfa_hotp_counter' => $counter], $this->uid, $this->userData);
     }
     return $this->isValid;
   }
@@ -167,7 +162,7 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
     // Store the hash made using the code in users_data.
     // @todo Use the request time to say something like 'code was requested at ..'?
     $store_data = ['tfa_accepted_code_' . $hash => REQUEST_TIME];
-    $this->setUserData('tfa', $store_data);
+    $this->setUserData('tfa', $store_data, $this->uid, $this->userData);
   }
 
   /**
@@ -184,7 +179,7 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
 
     // Check if the code has already been used or not.
     $key    = 'tfa_accepted_code_' . $hash;
-    $result = $this->getUserData('tfa', $key);
+    $result = $this->getUserData('tfa', $key, $this->uid, $this->userData);
 
     if (!empty($result)) {
       $this->alreadyAccepted = TRUE;
@@ -202,11 +197,10 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
    */
   protected function getSeed() {
     // Lookup seed for account and decrypt.
-    $uid    = $this->configuration['uid'];
-    $result = $this->getUserData('tfa', 'tfa_hotp_seed');
+    $result = $this->getUserData('tfa', 'tfa_hotp_seed', $this->uid, $this->userData);
 
     if (!empty($result)) {
-      $encrypted = Base32::decode($result['seed']);
+      $encrypted = base64_decode($result['seed']);
       $seed      = $this->decrypt($encrypted);
       if (!empty($seed)) {
         return $seed;
@@ -216,10 +210,29 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
   }
 
   /**
+   * Save seed for account.
+   *
+   * @param string $seed
+   *   Un-encrypted seed.
+   */
+  public function storeSeed($seed) {
+    // Encrypt seed for storage.
+    $encrypted = $this->encrypt($seed);
+
+    $record = [
+      'tfa_hotp_seed' => [
+        'seed' => base64_encode($encrypted),
+        'created' => REQUEST_TIME,
+      ],
+    ];
+    $this->setUserData('tfa', $record, $this->uid, $this->userData);
+  }
+
+  /**
    * Delete the seed of the current validated user.
    */
   public function deleteSeed() {
-    $this->deleteUserData('tfa', 'tfa_hotp_seed');
+    $this->deleteUserData('tfa', 'tfa_hotp_seed', $this->uid, $this->userData);
   }
 
   /**
@@ -230,49 +243,13 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
   }
 
   /**
-   * {@inheritdoc}
-   */
-  public function setUserData($module, array $data) {
-    $this->userData->set(
-      $module,
-      $this->configuration['uid'],
-      key($data),
-      current($data)
-    );
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getUserData($module, $key) {
-    $result = $this->userData->get(
-      $module,
-      $this->configuration['uid'],
-      $key
-    );
-
-    return $result;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function deleteUserData($module, $key) {
-    $this->userData->delete(
-      $module,
-      $this->configuration['uid'],
-      $key
-    );
-  }
-
-  /**
    * Get the HOTP counter.
    *
    * @return int
    *   The current value of the HOTP counter, or 1 if no value was found
    */
   public function getHotpCounter() {
-    $result = ($this->getUserData('tfa', 'tfa_hotp_counter')) ?: 1;
+    $result = ($this->getUserData('tfa', 'tfa_hotp_counter', $this->uid, $this->userData)) ?: -1;
 
     return $result;
   }
