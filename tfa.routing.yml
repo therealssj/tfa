@@ -4,7 +4,7 @@ tfa.entry:
     _form: '\Drupal\tfa\Form\EntryForm'
     _title: 'Two-Factor Authentication'
   requirements:
-      _permission: 'access content'
+    _permission: 'access content'
   options:
     _maintenance_access: TRUE
 
