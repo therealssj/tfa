@@ -1,3 +1,4 @@
+![travis](https://travis-ci.org/d8-contrib-modules/tfa.svg?branch=master "Travis CI")
 ## Two-factor Authentication (TFA) module for Drupal
 
 TFA is a base module for providing two-factor authentication for your Drupal
