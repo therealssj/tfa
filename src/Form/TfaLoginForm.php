@@ -116,6 +116,7 @@ class TfaLoginForm extends UserLoginForm {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // Similar to tfa_user_login() but not required to force user logout.
+    $current_uid = $form_state->get('uid');
     $account = $this->userStorage->load($form_state->get('uid'));
 
     $tfa_enabled = intval($this->config('tfa.settings')->get('enabled'));
@@ -133,7 +134,9 @@ class TfaLoginForm extends UserLoginForm {
         $validation_skipped = (isset($tfa_data['validation_skipped'])) ? $tfa_data['validation_skipped'] : 0;
         if ($allowed_skips && ($left = $allowed_skips - ++$validation_skipped) >= 0) {
           $tfa_data['validation_skipped'] = $validation_skipped;
-          drupal_set_message(t('You are required to setup two-factor authentication. You have @skipped attempts left after this you will be unable to login.', ['@skipped' => $left]), 'error');
+
+          $tfa_setup_link = '/user/' . $account->id() . '/security/tfa/tfa_totp';
+          drupal_set_message(t('You are required to setup two-factor authentication <a href="@link">here.</a> You have @skipped attempts left after this you will be unable to login.', ['@skipped' => $left, '@link'=>$tfa_setup_link]), 'error');
           $this->tfaSaveTfaData($account->id(), $this->userData, $tfa_data);
           user_login_finalize($account);
           $form_state->setRedirect('<front>');
