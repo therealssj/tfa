@@ -245,10 +245,10 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
    * Get the HOTP counter.
    *
    * @return int
-   *   The current value of the HOTP counter, or 1 if no value was found
+   *   The current value of the HOTP counter, or 0 if no value was found
    */
   public function getHotpCounter() {
-    $result = ($this->getUserData('tfa', 'tfa_hotp_counter', $this->uid, $this->userData)) ?: -1;
+    $result = ($this->getUserData('tfa', 'tfa_hotp_counter', $this->uid, $this->userData)) ?: 0;
 
     return $result;
   }
