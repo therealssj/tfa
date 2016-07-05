@@ -118,7 +118,8 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
     if (!$this->validate($values['code'])) {
       $form_state->setErrorByName('code', t('Invalid application code. Please try again.'));
       if ($this->alreadyAccepted) {
-        $form_state->setErrorByName('code', t('Invalid code, it was recently used for a login. Please wait for the application to generate a new code.'));
+        $form_state->clearErrors();
+        $form_state->setErrorByName('code', t('Invalid code, it was recently used for a login. Please try a new code.'));
       }
       return FALSE;
     }
@@ -142,8 +143,8 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
       // Get OTP seed.
       $seed          = $this->getSeed();
       $counter       = $this->getHotpCounter();
-      $this->isValid = ($seed && ($counter = $this->auth->otp->checkHotpResync(Base32::decode($seed), ++$counter, $code)));
-      $this->setUserData('tfa', ['tfa_hotp_counter' => $counter], $this->uid, $this->userData);
+      $this->isValid = ($seed && ($counter = $this->auth->otp->checkHotpResync(Base32::decode($seed), $counter, $code)));
+      $this->setUserData('tfa', ['tfa_hotp_counter' => ++$counter], $this->uid, $this->userData);
     }
     return $this->isValid;
   }
@@ -232,6 +233,7 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
    */
   public function deleteSeed() {
     $this->deleteUserData('tfa', 'tfa_hotp_seed', $this->uid, $this->userData);
+    $this->deleteUserData('tfa', 'tfa_hotp_counter', $this->uid, $this->userData);
   }
 
   /**
@@ -245,10 +247,10 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
    * Get the HOTP counter.
    *
    * @return int
-   *   The current value of the HOTP counter, or 0 if no value was found
+   *   The current value of the HOTP counter.
    */
   public function getHotpCounter() {
-    $result = ($this->getUserData('tfa', 'tfa_hotp_counter', $this->uid, $this->userData)) ?: 0;
+    $result = $this->getUserData('tfa', 'tfa_hotp_counter', $this->uid, $this->userData);
 
     return $result;
   }
