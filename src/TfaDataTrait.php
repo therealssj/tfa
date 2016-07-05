@@ -91,7 +91,7 @@ trait TfaDataTrait {
     $existing = $this->tfaGetTfaData($uid, $user_data);
 
     if (isset($existing['validation_skipped']) && !isset($data['validation_skipped'])) {
-      $validation_skipped =  $existing['validation_skipped'];
+      $validation_skipped = $existing['validation_skipped'];
     }
     else {
       $validation_skipped = isset($data['validation_skipped']) ? $data['validation_skipped'] : 0;
@@ -112,8 +112,6 @@ trait TfaDataTrait {
     if (isset($data['sms'])) {
       $tfa_data['sms'] = $data['sms'];
     }
-
-
 
     $status = 1;
     if (isset($data['status']) && $data['status'] === FALSE) {
