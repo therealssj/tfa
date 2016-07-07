@@ -117,6 +117,7 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
     if (!$this->validate($values['code'])) {
       $form_state->setErrorByName('code', t('Invalid application code. Please try again.'));
       if ($this->alreadyAccepted) {
+        $form_state->clearErrors();
         $form_state->setErrorByName('code', t('Invalid code, it was recently used for a login. Please try a new code.'));
       }
       return FALSE;
@@ -274,6 +275,7 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
    */
   public function getHotpCounter() {
     $result = ($this->getUserData('tfa', 'tfa_hotp_counter', $this->uid, $this->userData)) ?: 1;
+
     return $result;
   }
 
