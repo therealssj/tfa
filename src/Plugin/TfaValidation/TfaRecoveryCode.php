@@ -212,4 +212,24 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
     return $this->errorMessages;
   }
 
+  /**
+   * Set the user id for current account.
+   *
+   * @param $uid
+   *   User id of current account
+   */
+  public function setUID($uid){
+    $this->uid = $uid;
+  }
+
+  /**
+   * Get the current user id.
+   *
+   * @return int
+   *   The current user id.
+   */
+  public function getUID(){
+    return $this->uid;
+  }
+
 }

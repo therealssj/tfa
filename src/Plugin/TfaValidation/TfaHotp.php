@@ -105,7 +105,6 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
       '#type'  => 'submit',
       '#value' => t('Verify'),
     );
-
     return $form;
   }
 
@@ -118,7 +117,7 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
     if (!$this->validate($values['code'])) {
       $form_state->setErrorByName('code', t('Invalid application code. Please try again.'));
       if ($this->alreadyAccepted) {
-        $form_state->setErrorByName('code', t('Invalid code, it was recently used for a login. Please wait for the application to generate a new code.'));
+        $form_state->setErrorByName('code', t('Invalid code, it was recently used for a login. Please try a new code.'));
       }
       return FALSE;
     }
@@ -127,6 +126,24 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
       $this->storeAcceptedCode($values['code']);
       return TRUE;
     }
+  }
+
+  /**
+   * Simple validate for web services.
+   *
+   * @param int $code
+   *   OTP Code.
+   *
+   * @return bool
+   *   True if validation was successful otherwise false.
+   */
+  public function validateRequest($code) {
+    if ($this->validate($code)) {
+      $this->storeAcceptedCode($code);
+      return TRUE;
+    }
+
+    return FALSE;
   }
 
   /**
@@ -142,8 +159,8 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
       // Get OTP seed.
       $seed          = $this->getSeed();
       $counter       = $this->getHotpCounter();
-      $this->isValid = ($seed && ($counter = $this->auth->otp->checkHotpResync(Base32::decode($seed), ++$counter, $code)));
-      $this->setUserData('tfa', ['tfa_hotp_counter' => $counter], $this->uid, $this->userData);
+      $this->isValid = ($seed && ($counter = $this->auth->otp->checkHotpResync(Base32::decode($seed), $counter, $code)));
+      $this->setUserData('tfa', ['tfa_hotp_counter' => ++$counter], $this->uid, $this->userData);
     }
     return $this->isValid;
   }
@@ -175,17 +192,24 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
    */
   protected function alreadyAcceptedCode($code) {
     $hash = hash('sha1', Settings::getHashSalt() . $code);
-
     // Check if the code has already been used or not.
     $key    = 'tfa_accepted_code_' . $hash;
     $result = $this->getUserData('tfa', $key, $this->uid, $this->userData);
-
     if (!empty($result)) {
       $this->alreadyAccepted = TRUE;
       return TRUE;
     }
-
     return FALSE;
+  }
+
+  /**
+   * Returns whether code has already been used or not.
+   *
+   * @return bool
+   *   True is code already used otherwise false.
+   */
+  public function isAlreadyAccepted() {
+    return $this->alreadyAccepted;
   }
 
   /**
@@ -232,6 +256,7 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
    */
   public function deleteSeed() {
     $this->deleteUserData('tfa', 'tfa_hotp_seed', $this->uid, $this->userData);
+    $this->deleteUserData('tfa', 'tfa_hotp_counter', $this->uid, $this->userData);
   }
 
   /**
@@ -245,11 +270,10 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
    * Get the HOTP counter.
    *
    * @return int
-   *   The current value of the HOTP counter, or 1 if no value was found
+   *   The current value of the HOTP counter, or 1 if no value was found.
    */
   public function getHotpCounter() {
-    $result = ($this->getUserData('tfa', 'tfa_hotp_counter', $this->uid, $this->userData)) ?: -1;
-
+    $result = ($this->getUserData('tfa', 'tfa_hotp_counter', $this->uid, $this->userData)) ?: 1;
     return $result;
   }
 

@@ -116,7 +116,7 @@ class TfaValidationTest extends WebTestBase {
     );
 
     $this->drupalPostForm('tfa/' . $account->id() . '/' . $login_hash, $edit, t('Verify'));
-    $this->assertText($this->uiStrings('invalid-code-retry'));
+    $this->assertText($this->uiStrings('code-already-used'));
   }
 
   /**
@@ -181,7 +181,7 @@ class TfaValidationTest extends WebTestBase {
     );
 
     $this->drupalPostForm('tfa/' . $account->id() . '/' . $login_hash, $edit, t('Verify'));
-    $this->assertText($this->uiStrings('invalid-code-retry'));
+    $this->assertText($this->uiStrings('code-already-used'));
 
   }
 
@@ -251,6 +251,9 @@ class TfaValidationTest extends WebTestBase {
 
       case 'invalid-code-retry':
         return 'Invalid application code. Please try again.';
+
+      case 'code-already-used':
+        return 'Invalid code, it was recently used for a login. Please try a new code.';
     }
   }
 

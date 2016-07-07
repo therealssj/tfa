@@ -1,0 +1,261 @@
+<?php
+
+namespace Drupal\tfa_basic\Plugin\TfaLogin;
+
+use Drupal\Component\Utility\Crypt;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\tfa\Plugin\TfaBasePlugin;
+use Drupal\tfa\Plugin\TfaLoginInterface;
+use Drupal\tfa\Plugin\TfaValidationInterface;
+use Drupal\tfa\TfaDataTrait;
+use Drupal\user\UserDataInterface;
+
+/**
+ * Trusted browser validation class.
+ *
+ * @TfaLogin(
+ *   id = "tfa_trusted_browser",
+ *   label = @Translation("TFA Trusted Browser"),
+ *   description = @Translation("TFA Trusted Browser Plugin")
+ * )
+ */
+class TfaTrustedBrowser extends TfaBasePlugin implements TfaLoginInterface, TfaValidationInterface {
+  use TfaDataTrait;
+
+  /**
+   * Trust browser.
+   *
+   * @var bool
+   */
+  protected $trustBrowser;
+
+  /**
+   * The cookie name.
+   *
+   * @var string
+   */
+  protected $cookieName;
+
+  /**
+   * The domain name.
+   *
+   * @var string
+   */
+  protected $domain;
+
+  /**
+   * Cookie expiration time.
+   *
+   * @var string
+   */
+  protected $expiration;
+
+  /**
+   * {@inheritdoc}
+   */
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, UserDataInterface $user_data) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $user_data);
+    $config           = \Drupal::config('tfa.settings');
+    $this->cookieName = $config->get('cookie_name');
+    $this->domain     = $config->get('cookie_domain');
+    // Expiration defaults to 30 days.
+    $this->expiration = $config->get('trust_cookie_expiration', 3600 * 24 * 30);
+    $this->userData   = $user_data;
+  }
+
+  /**
+   * @return bool
+   */
+  public function loginAllowed() {
+    if (isset($_COOKIE[$this->cookieName]) && ($did = $this->trustedBrowser($_COOKIE[$this->cookieName])) !== FALSE) {
+      $this->setUsed($did);
+      return TRUE;
+    }
+    return FALSE;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getForm(array $form, FormStateInterface $form_state) {
+    $form['trust_browser'] = array(
+      '#type'        => 'checkbox',
+      '#title'       => t('Remember this browser?'),
+      '#description' => t('Not recommended if you are on a public or shared computer.'),
+    );
+    return $form;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function validateForm(array $form, FormStateInterface $form_state) {
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function submitForm(array $form, FormStateInterface &$form_state) {
+    $trust_browser = $form_state->getValue('trust_browser');
+    if (!empty($trust_browser)) {
+      $this->trustBrowser = TRUE;
+    }
+    else {
+      $this->trustBrowser = FALSE;
+    }
+  }
+
+  /**
+   * Finalize the browser setup.
+   */
+  public function finalize() {
+    if ($this->trustBrowser) {
+      $name = $this->getAgent();
+      $this->setTrusted($this->generateBrowserId(), $name);
+    }
+  }
+
+  /**
+   * Generate a random value to identify the browser.
+   *
+   * @return string
+   *   Base64 encoded browser id.
+   */
+  protected function generateBrowserId() {
+    $id = base64_encode(Crypt::randomBytes(32));
+    return strtr($id, array('+' => '-', '/' => '_', '=' => ''));
+  }
+
+  /**
+   * Store browser value and issue cookie for user.
+   *
+   * @param string $id
+   *   Trusted browser id.
+   * @param string $name
+   *   The custom browser name.
+   */
+  protected function setTrusted($id, $name = '') {
+    // Store id for account.
+    $record = [
+      'tfa_trusted_browser' => [
+        'value'   => $id,
+        'created' => REQUEST_TIME,
+        'ip'      => \Drupal::request()->getClientIp(),
+        'name'    => $name,
+      ],
+    ];
+
+    $this->setUserData('tfa', $record, $this->configuration['uid'], $this->userData);
+    // Issue cookie with ID.
+    $cookie_secure = ini_get('session.cookie_secure');
+    $expiration    = REQUEST_TIME + $this->expiration;
+    setcookie($this->cookieName, $id, $expiration, '/', $this->domain, (empty($cookie_secure) ? FALSE : TRUE), TRUE);
+    $name = empty($name) ? $this->getAgent() : $name;
+    // TODO - use services defined in module instead this procedural way.
+    \Drupal::logger('tfa')->info('Set trusted browser for user UID !uid, browser @name', array('@name' => $name, '!uid' => $this->uid));
+  }
+
+  /**
+   * Updated browser last used time.
+   *
+   * @param int $id
+   *   Internal browser ID to update.
+   */
+  protected function setUsed($id) {
+    $result = $this->getUserData('tfa', 'tfa_trusted_browser', $this->uid, $this->userData);
+    $result[$id]['last_used'] = REQUEST_TIME;
+    $this->setUserData('tfa', $result, $this->uid, $this->userData);
+  }
+
+  /**
+   * Check if browser id matches user's saved browser.
+   *
+   * @param string $id
+   *   The browser ID.
+   *
+   * @return bool
+   *   TRUE if ID exists otherwise FALSE.
+   */
+  protected function trustedBrowser($id) {
+    // Check if $id has been saved for this user.
+    $result = $this->getUserData('tfa', 'tfa_trusted_browser', $this->uid, $this->userData);
+    if (isset($result[$id])) {
+      return TRUE;
+    }
+
+    return FALSE;
+  }
+
+  /**
+   * Delete users trusted browser.
+   *
+   * @param string (optional) $id
+   *   Id of the browser to be purged.
+   *
+   * @return bool TRUE is id found and purged otherwise FALSE.
+   * TRUE is id found and purged otherwise FALSE.
+   */
+  protected function deleteTrusted($id = '') {
+    $result = $this->getUserData('tfa', 'tfa_trusted_browser', $this->uid, $this->userData);
+    if ($id) {
+      if (isset($result[$id])) {
+        $this->setUserData('tfa', $result, $this->uid, $this->userData);
+        return TRUE;
+      }
+    }
+    else {
+      $this->deleteUserData('tfa', 'tfa_trsuted_browser', $this->uid, $this->userData);
+      return TRUE;
+    }
+
+    return FALSE;
+  }
+
+  /**
+   * Get simplified browser name from user agent.
+   *
+   * @param string $name
+   *   Default browser name.
+   *
+   * @return string
+   *   Simplified browser name.
+   */
+  protected function getAgent($name = '') {
+    if (isset($_SERVER['HTTP_USER_AGENT'])) {
+      // Match popular user agents.
+      $agent = $_SERVER['HTTP_USER_AGENT'];
+      if (preg_match("/like\sGecko\)\sChrome\//", $agent)) {
+        $name = 'Chrome';
+      }
+      elseif (strpos($_SERVER['HTTP_USER_AGENT'], 'Firefox') !== FALSE) {
+        $name = 'Firefox';
+      }
+      elseif (strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== FALSE) {
+        $name = 'Internet Explorer';
+      }
+      elseif (strpos($_SERVER['HTTP_USER_AGENT'], 'Safari') !== FALSE) {
+        $name = 'Safari';
+      }
+      else {
+        // Otherwise filter agent and truncate to column size.
+        $name = substr($agent, 0, 255);
+      }
+    }
+    return $name;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function ready() {
+    // TODO: Implement ready() method.
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getFallbacks() {
+    return ($this->pluginDefinition['fallbacks']) ?: '';
+  }
+
+}

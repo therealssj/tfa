@@ -90,7 +90,7 @@ trait TfaDataTrait {
     // Check if existing data and update.
     $existing = $this->tfaGetTfaData($uid, $user_data);
     if (isset($existing['validation_skipped']) && !isset($data['validation_skipped'])) {
-      $data['validation_skipped'] = $existing['validation_skipped'];
+      $validation_skipped = $existing['validation_skipped'];
     }
     else {
       $validation_skipped = isset($data['validation_skipped']) ? $data['validation_skipped'] : 0;

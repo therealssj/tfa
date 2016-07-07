@@ -18,15 +18,10 @@ tfa.settings:
       type: string
       label: 'Prefix for TOTP QR code names. Suffix is account username.'
     fallback_plugins:
-      type: mapping
+      type: sequence
       label: 'Fallback plugins'
-      mapping:
-        tfa_totp:
-          type: otp.fallbacks
-          label: 'TOTP fallbacks'
-        tfa_hotp:
-          type: otp.fallbacks
-          label: 'HOTP fallbacks'
+      sequence:
+        type: fallback.config.[%key]
     setup_plugins:
       type: sequence
       label: 'TFA plugins'
@@ -34,29 +29,34 @@ tfa.settings:
       type: sequence
       label: 'Send plugins'
     login_plugins:
-      type: sequence
-      label: 'Login plugins'
+      type: mapping
+      label: 'Enabled Login plugins'
+      mapping:
+        tfa_trusted_browser:
+          type: string
+          label: 'Tfa Trusted Browser'
     validate_plugin:
       type: string
       label: 'Current validation plugin'
     validation_skip:
       type: integer
       label: 'No. of times a user without tfa validation set-up can login.'
+    trust_cookie_expiration:
+      type: integer
+      label: 'How long before TFA cookies expire. Default is 30 days.'
+    cookie_name:
+      type: string
+      label: 'Cookie name of TFA trusted browser cookie. Default is "TB".'
+    cookie_domain:
+      type: string
+      label: 'Cookie domain. Default is empty string.'
     help_text:
       type: string
       label: 'Text to display on help page. Plain text only.'
 
-otp.fallbacks:
+default.fallback.config:
   type: mapping
-  label: 'OTP Fallbacks'
-  mapping:
-    tfa_recovery_code:
-      type: tfa.plugin.config
-      label: 'Recovery code fallback'
-
-tfa.plugin.config:
-  type: mapping
-  label: 'TFA validation plugin'
+  label: 'Default Fallback plugin config.'
   mapping:
     enable:
       type: integer
@@ -64,3 +64,15 @@ tfa.plugin.config:
     weight:
       type: integer
       label: 'Weight'
+
+default.fallback:
+  type: mapping
+  label: 'OTP Fallbacks'
+  mapping:
+    tfa_recovery_code:
+      type: default.fallback.config
+      label: 'Recovery code fallback'
+
+fallback.config.*:
+  type: default.fallback
+  label: 'Fallback settings'
