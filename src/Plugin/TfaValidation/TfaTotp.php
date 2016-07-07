@@ -115,7 +115,6 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
    */
   public function validateForm(array $form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
-    // dpm($values);
     if (!$this->validate($values['code'])) {
       $form_state->setErrorByName('code', t('Invalid application code. Please try again.'));
       if ($this->alreadyAccepted) {
@@ -129,6 +128,24 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
       $this->storeAcceptedCode($values['code']);
       return TRUE;
     }
+  }
+
+  /**
+   * Simple validate for web services.
+   *
+   * @param int $code
+   *   OTP Code.
+   *
+   * @return bool
+   *   True if validation was successful otherwise false.
+   */
+  public function validateRequest($code) {
+    if ($this->validate($code)) {
+      $this->storeAcceptedCode($code);
+      return TRUE;
+    }
+
+    return FALSE;
   }
 
   /**
@@ -176,17 +193,24 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
    */
   protected function alreadyAcceptedCode($code) {
     $hash = hash('sha1', Settings::getHashSalt() . $code);
-
     // Check if the code has already been used or not.
     $key    = 'tfa_accepted_code_' . $hash;
     $result = $this->getUserData('tfa', $key, $this->uid, $this->userData);
-
     if (!empty($result)) {
       $this->alreadyAccepted = TRUE;
       return TRUE;
     }
-
     return FALSE;
+  }
+
+  /**
+   * Returns whether code has already been used or not.
+   *
+   * @return bool
+   *   True is code already used otherwise false.
+   */
+  public function isAlreadyAccepted() {
+    return $this->alreadyAccepted;
   }
 
   /**

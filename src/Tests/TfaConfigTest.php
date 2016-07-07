@@ -71,6 +71,7 @@ class TfaConfigTest extends WebTestBase {
     $edit = [
       'tfa_enabled' => TRUE,
       'tfa_validate' => 'tfa_hotp',
+      'tfa_login[tfa_trusted_browser]' => 'tfa_trusted_browser',
     ];
 
     $this->drupalPostForm(NULL, $edit, t('Save configuration'));

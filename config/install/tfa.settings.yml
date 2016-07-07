@@ -10,3 +10,6 @@ fallback_plugins: { }
 help_text: 'Contact support to reset your access'
 name_prefix: ''
 validation_skip: 3
+trust_cookie_expiration: 2592000
+cookie_name: 'TB'
+cookie_domain: ''
