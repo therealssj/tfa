@@ -45,7 +45,7 @@ class BasicSetup extends FormBase {
    * {@inheritdoc}
    */
   public function __construct(PluginManagerInterface $manager, UserDataInterface $user_data) {
-    $this->manager  = $manager;
+    $this->manager = $manager;
     $this->userData = $user_data;
   }
 
@@ -61,14 +61,14 @@ class BasicSetup extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state, User $user = NULL, $method = 'tfa_totp') {
     $plugin_definitions = $this->manager->getDefinitions();
-    $account            = User::load($this->currentUser()->id());
+    $account = User::load($this->currentUser()->id());
 
     $form['account'] = array(
-      '#type'  => 'value',
+      '#type' => 'value',
       '#value' => $user,
     );
-    $tfa_data        = $this->tfaGetTfaData($user->id(), $this->userData);
-    $enabled         = isset($tfa_data['status']) && $tfa_data['status'] ? TRUE : FALSE;
+    $tfa_data = $this->tfaGetTfaData($user->id(), $this->userData);
+    $enabled = isset($tfa_data['status']) && $tfa_data['status'] ? TRUE : FALSE;
 
     $storage = $form_state->getStorage();
     // Always require a password on the first time through.
@@ -82,31 +82,31 @@ class BasicSetup extends FormBase {
       }
 
       $form['current_pass'] = array(
-        '#type'        => 'password',
-        '#title'       => t('Current password'),
-        '#size'        => 25,
-        '#required'    => TRUE,
+        '#type' => 'password',
+        '#title' => t('Current password'),
+        '#size' => 25,
+        '#required' => TRUE,
         '#description' => $current_pass_description,
-        '#attributes'  => array('autocomplete' => 'off'),
+        '#attributes' => array('autocomplete' => 'off'),
       );
 
       $form['submit'] = array(
-        '#type'  => 'submit',
+        '#type' => 'submit',
         '#value' => t('Confirm'),
       );
 
       $form['cancel'] = array(
-        '#type'                    => 'submit',
-        '#value'                   => t('Cancel'),
+        '#type' => 'submit',
+        '#value' => t('Cancel'),
         '#limit_validation_errors' => array(),
-        '#submit'                  => array('::cancelForm'),
+        '#submit' => array('::cancelForm'),
       );
     }
     else {
       if (!$enabled && empty($storage['steps'])) {
-        $storage['full_setup']    = TRUE;
-        $steps                    = $this->tfaFullSetupSteps();
-        $storage['steps_left']    = $steps;
+        $storage['full_setup'] = TRUE;
+        $steps = $this->tfaFullSetupSteps();
+        $storage['steps_left'] = $steps;
         $storage['steps_skipped'] = array();
       }
 
@@ -117,29 +117,29 @@ class BasicSetup extends FormBase {
       // Record methods progressed.
       $storage['steps'][] = $method;
 
-      $plugin_id        = $method . '_setup';
-      $validation_inst  = \Drupal::service('plugin.manager.tfa.setup');
-      $setup_plugin     = $validation_inst->createInstance($plugin_id, ['uid' => $account->id()]);
-      $tfa_setup        = new TfaSetup($setup_plugin);
-      $form             = $tfa_setup->getForm($form, $form_state);
+      $plugin_id = $method . '_setup';
+      $validation_inst = \Drupal::service('plugin.manager.tfa.setup');
+      $setup_plugin = $validation_inst->createInstance($plugin_id, ['uid' => $account->id()]);
+      $tfa_setup = new TfaSetup($setup_plugin);
+      $form = $tfa_setup->getForm($form, $form_state);
       $storage[$method] = $tfa_setup;
 
       if (isset($storage['full_setup']) && count($storage['steps']) > 1) {
-        $count                   = count($storage['steps_left']);
+        $count = count($storage['steps_left']);
         $form['actions']['skip'] = array(
-          '#type'                    => 'submit',
-          '#value'                   => $count > 0 ? t('Skip') : t('Skip and finish'),
+          '#type' => 'submit',
+          '#value' => $count > 0 ? t('Skip') : t('Skip and finish'),
           '#limit_validation_errors' => array(),
-          '#submit'                  => array('::cancelForm'),
+          '#submit' => array('::cancelForm'),
         );
       }
       // Provide cancel button on first step or single steps.
       else {
         $form['actions']['cancel'] = array(
-          '#type'                    => 'submit',
-          '#value'                   => t('Cancel'),
+          '#type' => 'submit',
+          '#value' => t('Cancel'),
           '#limit_validation_errors' => array(),
-          '#submit'                  => array('::cancelForm'),
+          '#submit' => array('::cancelForm'),
         );
       }
       // Record the method in progress regardless of whether in full setup.
@@ -153,9 +153,9 @@ class BasicSetup extends FormBase {
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    $user    = User::load($this->currentUser()->id());
+    $user = User::load($this->currentUser()->id());
     $storage = $form_state->getStorage();
-    $values  = $form_state->getValues();
+    $values = $form_state->getValues();
     $account = $form['account']['#value'];
     if (isset($values['current_pass'])) {
       // Allow administrators to change TFA settings for another account.
@@ -174,10 +174,9 @@ class BasicSetup extends FormBase {
       //        form_set_error('current_pass', t("Incorrect password."));
       //      }.
       return;
-    }
-    // Validate plugin form.
+    } // Validate plugin form.
     elseif (!empty($storage['step_method'])) {
-      $method    = $storage['step_method'];
+      $method = $storage['step_method'];
       $tfa_setup = $storage[$method];
       if (!$tfa_setup->validateForm($form, $form_state)) {
         foreach ($tfa_setup->getErrorMessages() as $element => $message) {
@@ -202,7 +201,7 @@ class BasicSetup extends FormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $account = $form['account']['#value'];
     $storage = $form_state->getStorage();
-    $values  = $form_state->getValues();
+    $values = $form_state->getValues();
 
     // Password validation.
     if (isset($values['current_pass'])) {
@@ -210,15 +209,14 @@ class BasicSetup extends FormBase {
       $form_state->setRebuild();
       $form_state->setStorage($storage);
       return;
-    }
-    // Submitting a plugin form.
+    } // Submitting a plugin form.
     elseif (!empty($storage['step_method'])) {
-      $method         = $storage['step_method'];
+      $method = $storage['step_method'];
       $skipped_method = FALSE;
 
       // Support skipping optional steps when in full setup.
       if (isset($values['skip']) && $values['op'] === $values['skip']) {
-        $skipped_method             = $method;
+        $skipped_method = $method;
         $storage['steps_skipped'][] = $method;
         unset($storage[$method]);
       }
@@ -255,7 +253,7 @@ class BasicSetup extends FormBase {
         $this->tfaSaveTfaData($account->id(), $this->userData, $data);
         \Drupal::logger('tfa_basic')->info('TFA enabled for user @name UID @uid', array(
           '@name' => $account->getUsername(),
-          '@uid'  => $account->id(),
+          '@uid' => $account->id(),
         ));
 
         // @todo Not working, not sure why though.
@@ -269,9 +267,9 @@ class BasicSetup extends FormBase {
    * Steps eligble for TFA setup.
    */
   private function tfaFullSetupSteps() {
-    $config         = $this->config('tfa.settings');
+    $config = $this->config('tfa.settings');
     $enabled_plugin = $config->get('validate_plugin');
-    $steps          = [
+    $steps = [
       $config->get('validate_plugin'),
       key($config->get('fallback_plugins')[$enabled_plugin]),
     ];
@@ -327,7 +325,7 @@ class BasicSetup extends FormBase {
       }
 
       // Set next step and mark form for rebuild.
-      $next_step              = array_shift($storage['steps_left']);
+      $next_step = array_shift($storage['steps_left']);
       $storage['step_method'] = $next_step;
       $form_state->setRebuild();
     }
