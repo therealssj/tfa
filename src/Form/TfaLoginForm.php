@@ -119,12 +119,16 @@ class TfaLoginForm extends UserLoginForm {
     $current_uid = $form_state->get('uid');
     $account = $this->userStorage->load($form_state->get('uid'));
 
+    // Uncomment when things go wrong and you get logged out.
+    // user_login_finalize($account);
+    // $form_state->setRedirect('<front>');
     $tfa_enabled = intval($this->config('tfa.settings')->get('enabled'));
     $allowed_skips = intval($this->config('tfa.settings')->get('validation_skip'));
 
     // GetPlugin
     // Pass to service functions.
-    $tfaValidationPlugin = $this->tfaValidationManager->getInstance(['uid' => $account->id()]);
+    $validate_plugin = $this->config('tfa.settings')->get('validate_plugin');
+    $tfaValidationPlugin = $this->tfaValidationManager->createInstance($validate_plugin, ['uid' => $account->id()]);
     $this->tfaLoginPlugins = $this->tfaLoginManager->getPlugins(['uid' => $account->id()]);
 
     // Setup TFA.
@@ -136,7 +140,7 @@ class TfaLoginForm extends UserLoginForm {
           $tfa_data['validation_skipped'] = $validation_skipped;
 
           $tfa_setup_link = '/user/' . $account->id() . '/security/tfa/tfa_totp';
-          drupal_set_message(t('You are required to setup two-factor authentication <a href="@link">here.</a> You have @skipped attempts left after this you will be unable to login.', ['@skipped' => $left, '@link'=>$tfa_setup_link]), 'error');
+          drupal_set_message(t('You are required to setup two-factor authentication <a href="@link">here.</a> You have @skipped attempts left after this you will be unable to login.', ['@skipped' => $left, '@link' => $tfa_setup_link]), 'error');
           $this->tfaSaveTfaData($account->id(), $this->userData, $tfa_data);
           user_login_finalize($account);
           $form_state->setRedirect('<front>');

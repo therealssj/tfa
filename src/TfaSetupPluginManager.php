@@ -6,6 +6,8 @@ use Drupal\Component\Plugin\Factory\DefaultFactory;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Plugin\DefaultPluginManager;
+use Drupal\encrypt\EncryptionProfileManagerInterface;
+use Drupal\encrypt\EncryptService;
 use Drupal\user\UserDataInterface;
 
 /**
@@ -21,6 +23,20 @@ class TfaSetupPluginManager extends DefaultPluginManager {
   protected $userData;
 
   /**
+   * Encryption profile manager.
+   *
+   * @var \Drupal\encrypt\EncryptionProfileManagerInterface
+   */
+  protected $encryptionProfileManager;
+
+  /**
+   * Encryption service.
+   *
+   * @var \Drupal\encrypt\EncryptService
+   */
+  protected $encryptService;
+
+  /**
    * Constructs a new TfaSetup plugin manager.
    *
    * @param \Traversable $namespaces
@@ -30,12 +46,20 @@ class TfaSetupPluginManager extends DefaultPluginManager {
    *   Cache backend instance to use.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
    *   The module handler.
+   * @param \Drupal\user\UserDataInterface $user_data
+   *   User data service.
+   * @param \Drupal\encrypt\EncryptionProfileManagerInterface $encryption_profile_manager
+   *   Encryption profile manager.
+   * @param \Drupal\encrypt\EncryptService $encrypt_service
+   *   Encryption service.
    */
-  public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler, UserDataInterface $user_data) {
+  public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler, UserDataInterface $user_data, EncryptionProfileManagerInterface $encryption_profile_manager, EncryptService $encrypt_service) {
     parent::__construct('Plugin/TfaSetup', $namespaces, $module_handler, 'Drupal\tfa\TfaSetupInterface', 'Drupal\tfa\Annotation\TfaSetup');
     $this->alterInfo('tfa_setup_info');
     $this->setCacheBackend($cache_backend, 'tfa_setup');
     $this->userData = $user_data;
+    $this->encryptService = $encrypt_service;
+    $this->encryptionProfileManager = $encryption_profile_manager;
   }
 
   /**
@@ -50,15 +74,14 @@ class TfaSetupPluginManager extends DefaultPluginManager {
    *    Require setup plugin instance
    */
   public function createInstance($plugin_id, array $configuration = array()) {
-    // @todo defining userdata as a parameter results in an error. why?
     $plugin_definition = $this->getDefinition($plugin_id);
     $plugin_class      = DefaultFactory::getPluginClass($plugin_id, $plugin_definition);
     // If the plugin provides a factory method, pass the container to it.
     if (is_subclass_of($plugin_class, 'Drupal\Core\Plugin\ContainerFactoryPluginInterface')) {
-      $plugin = $plugin_class::create(\Drupal::getContainer(), $configuration, $plugin_id, $plugin_definition, $this->userData);
+      $plugin = $plugin_class::create(\Drupal::getContainer(), $configuration, $plugin_id, $plugin_definition, $this->userData, $this->encryptionProfileManager, $this->encryptService);
     }
     else {
-      $plugin = new $plugin_class($configuration, $plugin_id, $plugin_definition, $this->userData);
+      $plugin = new $plugin_class($configuration, $plugin_id, $plugin_definition, $this->userData, $this->encryptionProfileManager, $this->encryptService);
     }
     return $plugin;
   }

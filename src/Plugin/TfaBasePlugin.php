@@ -3,13 +3,21 @@
 namespace Drupal\tfa\Plugin;
 
 use Drupal\Component\Plugin\PluginBase;
+use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Site\Settings;
+use Drupal\encrypt\EncryptionProfileManagerInterface;
+use Drupal\encrypt\EncryptServiceInterface;
+use Drupal\tfa\TfaDataTrait;
 use Drupal\user\UserDataInterface;
 
 /**
  * Base plugin class.
  */
 abstract class TfaBasePlugin extends PluginBase {
+  use DependencySerializationTrait;
+  use TfaDataTrait;
+
   /**
    * The user submitted code to be validated.
    *
@@ -60,6 +68,20 @@ abstract class TfaBasePlugin extends PluginBase {
   protected $uid;
 
   /**
+   * Encryption profile.
+   *
+   * @var \Drupal\encrypt\EncryptionProfileManagerInterface
+   */
+  protected $encryptionProfile;
+
+  /**
+   * Encryption service.
+   *
+   * @var \Drupal\encrypt\EncryptService
+   */
+  protected $encryptService;
+
+  /**
    * Constructs a new Tfa plugin object.
    *
    * @param array $configuration
@@ -70,8 +92,12 @@ abstract class TfaBasePlugin extends PluginBase {
    *    The plugin definition.
    * @param \Drupal\user\UserDataInterface $user_data
    *    User data object to store user specific information.
+   * @param \Drupal\encrypt\EncryptionProfileManagerInterface $encryption_profile_manager
+   *   Encryption profile manager.
+   * @param \Drupal\encrypt\EncryptServiceInterface $encrypt_service
+   *   Encryption service.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, UserDataInterface $user_data) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, UserDataInterface $user_data, EncryptionProfileManagerInterface $encryption_profile_manager, EncryptServiceInterface $encrypt_service) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     // Default code length is 6.
     $this->codeLength = 6;
@@ -79,6 +105,11 @@ abstract class TfaBasePlugin extends PluginBase {
 
     // User Data service to store user-based data in key value pairs.
     $this->userData = $user_data;
+
+    // Encryption profile manager and service.
+    $encryptionProfileId = \Drupal::config('tfa.settings')->get('encryption');
+    $this->encryptionProfile = $encryption_profile_manager->getEncryptionProfile($encryptionProfileId);
+    $this->encryptService = $encrypt_service;
     $this->uid = $this->configuration['uid'];
   }
 
@@ -158,28 +189,14 @@ abstract class TfaBasePlugin extends PluginBase {
    *
    * Should be used when writing codes to storage.
    *
-   * @param string $text
+   * @param string $data
    *   The string to be encrypted.
    *
    * @return string
    *   The enrcypted string.
    */
-  protected function encrypt($text) {
-    $key = $this->encryptionKey;
-
-    $td = mcrypt_module_open('rijndael-128', '', 'ecb', '');
-    $iv = mcrypt_create_iv(mcrypt_enc_get_iv_size($td), MCRYPT_RAND);
-
-    $key = substr($key, 0, mcrypt_enc_get_key_size($td));
-
-    mcrypt_generic_init($td, $key, $iv);
-
-    $data = mcrypt_generic($td, $text);
-
-    mcrypt_generic_deinit($td);
-    mcrypt_module_close($td);
-
-    return $data;
+  protected function encrypt($data) {
+    return $this->encryptService->encrypt($data, $this->encryptionProfile);
   }
 
   /**
@@ -194,21 +211,43 @@ abstract class TfaBasePlugin extends PluginBase {
    *   The decrypted string.
    */
   protected function decrypt($data) {
-    $key = $this->encryptionKey;
+    return $this->encryptService->decrypt($data, $this->encryptionProfile);
+  }
 
-    $td = mcrypt_module_open('rijndael-128', '', 'ecb', '');
-    $iv = mcrypt_create_iv(mcrypt_enc_get_iv_size($td), MCRYPT_RAND);
+  /**
+   * Store validated code to prevent replay attack.
+   *
+   * @param string $code
+   *    The validated code.
+   */
+  protected function storeAcceptedCode($code) {
+    $code = preg_replace('/\s+/', '', $code);
+    $hash = hash('sha1', Settings::getHashSalt() . $code);
 
-    $key = substr($key, 0, mcrypt_enc_get_key_size($td));
+    // Store the hash made using the code in users_data.
+    $store_data = ['tfa_accepted_code_' . $hash => REQUEST_TIME];
+    $this->setUserData('tfa', $store_data, $this->uid, $this->userData);
+  }
 
-    mcrypt_generic_init($td, $key, $iv);
-
-    $text = mdecrypt_generic($td, $data);
-
-    mcrypt_generic_deinit($td);
-    mcrypt_module_close($td);
-
-    return $text;
+  /**
+   * Whether code has already been used.
+   *
+   * @param string $code
+   *    The code to be checked.
+   *
+   * @return bool
+   *    TRUE if already used otherwise FALSE
+   */
+  protected function alreadyAcceptedCode($code) {
+    $hash = hash('sha1', Settings::getHashSalt() . $code);
+    // Check if the code has already been used or not.
+    $key    = 'tfa_accepted_code_' . $hash;
+    $result = $this->getUserData('tfa', $key, $this->uid, $this->userData);
+    if (!empty($result)) {
+      $this->alreadyAccepted = TRUE;
+      return TRUE;
+    }
+    return FALSE;
   }
 
 }

@@ -3,9 +3,11 @@
 namespace Drupal\tfa\Plugin\TfaValidation;
 
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\encrypt\EncryptionProfileManagerInterface;
+use Drupal\encrypt\EncryptService;
 use Drupal\tfa\Plugin\TfaBasePlugin;
 use Drupal\tfa\Plugin\TfaValidationInterface;
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\tfa\TfaDataTrait;
 use Drupal\user\UserDataInterface;
 use Otp\GoogleAuthenticator;
@@ -35,13 +37,11 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
   /**
    * {@inheritdoc}
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, UserDataInterface $user_data) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition, $user_data);
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, UserDataInterface $user_data, EncryptionProfileManagerInterface $encryption_profile_manager, EncryptService $encrypt_service) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $user_data, $encryption_profile_manager, $encrypt_service);
     $this->auth      = new \StdClass();
     $this->auth->otp = new Otp();
     $this->auth->ga  = new GoogleAuthenticator();
-    // Set in settings.php.
-    $this->encryptionKey = \Drupal::config('tfa.settings')->get('secret_key');
   }
 
   /**
@@ -52,7 +52,9 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('user.data')
+      $container->get('user.data'),
+      $container->get('encrypt.encryption_profile.manager'),
+      $container->get('encryption')
     );
   }
 
@@ -117,19 +119,6 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
    *   Array of codes indexed by ID.
    */
   public function getCodes() {
-    // Lookup codes for account and decrypt.
-    // $codes = array();
-    // $result = db_query("SELECT id, code FROM {tfa_recovery_code} WHERE uid = :uid AND used = 0", array(':uid' => $this->context['uid']));
-    // if (!empty($result)) {
-    //  foreach ($result as $data) {
-    //    $encrypted = base64_decode($data->code);
-    //    // trim() prevents extraneous escape characters.
-    //    $code = trim($this->decrypt($encrypted));
-    //    if (!empty($code)) {
-    //      $codes[$data->id] = $code;
-    //    }
-    //  }
-    // }.
     $codes = $this->getUserData('tfa', 'tfa_recovery_code', $this->uid, $this->userData) ?: [];
     array_walk($codes, function(&$v, $k) {
       $v = $this->decrypt($v);
@@ -164,7 +153,7 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
   /**
    * Delete existing codes.
    */
-  public function deleteCodes() {
+  protected function deleteCodes() {
     // Delete any existing codes.
     $this->deleteUserData('tfa', 'tfa_recovery_code', $this->uid, $this->userData);
   }
@@ -213,23 +202,10 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
   }
 
   /**
-   * Set the user id for current account.
-   *
-   * @param $uid
-   *   User id of current account
+   * {@inheritdoc}
    */
-  public function setUID($uid){
-    $this->uid = $uid;
-  }
-
-  /**
-   * Get the current user id.
-   *
-   * @return int
-   *   The current user id.
-   */
-  public function getUID(){
-    return $this->uid;
+  public function purge() {
+    $this->deleteCodes();
   }
 
 }

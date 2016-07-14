@@ -63,10 +63,17 @@ class BasicOverview extends FormBase {
     if (!empty($user_tfa)) {
       $date_formatter = \Drupal::service('date.formatter');
       if ($enabled && !empty($user_tfa['data']['plugins'])) {
-        $status_text = t('Status: <strong>TFA enabled</strong>, set @time. <a href=":url">Disable TFA</a>', array(
-          '@time' => $date_formatter->format($user_tfa['saved']),
-          ':url'  => URL::fromRoute('tfa.disable', ['user' => $user->id()])->toString(),
-        ));
+        if ($this->currentUser()->hasPermission('disable own tfa')) {
+          $status_text = t('Status: <strong>TFA enabled</strong>, set @time. <a href=":url">Disable TFA</a>', array(
+            '@time' => $date_formatter->format($user_tfa['saved']),
+            ':url'  => URL::fromRoute('tfa.disable', ['user' => $user->id()])->toString(),
+          ));
+        }
+        else {
+          $status_text = t('Status: <strong>TFA enabled</strong>, set @time.', array(
+            '@time' => $date_formatter->format($user_tfa['saved']),
+          ));
+        }
       }
       else {
         $status_text = t('Status: <strong>TFA disabled</strong>, set @time.', array('@time' => $date_formatter->format($user_tfa['saved'])));

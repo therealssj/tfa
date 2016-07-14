@@ -5,18 +5,18 @@ tfa.settings:
     enabled:
       type: integer
       label: 'TFA enabled'
-    secret_key:
-     type: string
-     label: 'Secret key to to use as encryption key for TOTP seed encryption. Should be set in settings.php and not in the Drupal database.'
     time_skew:
      type: integer
      label: 'Number of 30 second chunks to allow TOTP keys between.'
+    counter_window:
+      type: integer
+      label: 'How far ahead from current counter should we check the code.'
     recovery_codes_amount:
      type: integer
      label: 'Recovery codes amount. Default is 10.'
     name_prefix:
       type: string
-      label: 'Prefix for TOTP QR code names. Suffix is account username.'
+      label: 'Prefix for OTP QR code names. Suffix is account username.'
     fallback_plugins:
       type: sequence
       label: 'Fallback plugins'
@@ -41,6 +41,9 @@ tfa.settings:
     validation_skip:
       type: integer
       label: 'No. of times a user without tfa validation set-up can login.'
+    encryption:
+      type: string
+      label: 'The id of the encrpytion profile.'
     trust_cookie_expiration:
       type: integer
       label: 'How long before TFA cookies expire. Default is 30 days.'
@@ -58,6 +61,7 @@ default.fallback.config:
   type: mapping
   label: 'Default Fallback plugin config.'
   mapping:
+
     enable:
       type: integer
       label: 'Plugin state'

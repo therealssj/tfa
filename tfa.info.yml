@@ -4,3 +4,5 @@ description: Pluggable provider of second factor authentication for Drupal
 core: 8.x
 package: System
 configure: tfa.settings
+dependencies:
+ - encrypt

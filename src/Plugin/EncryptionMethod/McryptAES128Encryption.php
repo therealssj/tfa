@@ -1,10 +1,10 @@
 <?php
 
-namespace Drupal\encrypt\Plugin\EncryptionMethod;
+namespace Drupal\tfa\Plugin\EncryptionMethod;
 
 use Drupal\Component\Utility\Unicode;
 use Drupal\encrypt\EncryptionMethodInterface;
-use Drupal\Core\Plugin\PluginBase;
+use Drupal\encrypt\Plugin\EncryptionMethod\EncryptionMethodBase;
 
 /**
  * Class McryptAES128Encryption.
@@ -14,23 +14,11 @@ use Drupal\Core\Plugin\PluginBase;
  * @EncryptionMethod(
  *   id = "mcrypt_aes_128",
  *   title = @Translation("Mcrypt AES 128"),
- *   description = "This uses PHPs mcrypt extension and <a href='http://en.wikipedia.org/wiki/Advanced_Encryption_Standard'>AES-128</a>."
+ *   description = "This uses PHPs mcrypt extension and <a href='http://en.wikipedia.org/wiki/Advanced_Encryption_Standard'>AES-128</a>.",
+ *   key_type = {"aes_encryption"}
  * )
  */
-class McryptAES128Encryption extends PluginBase implements EncryptionMethodInterface {
-
-  /**
-   * @return mixed
-   */
-  public function getDependencies() {
-    $errors = array();
-
-    if (!function_exists('mcrypt_encrypt')) {
-      $errors[] = t('MCrypt library not installed.');
-    }
-
-    return $errors;
-  }
+class McryptAES128Encryption extends EncryptionMethodBase implements EncryptionMethodInterface {
 
   /**
    * @return mixed
@@ -77,6 +65,32 @@ class McryptAES128Encryption extends PluginBase implements EncryptionMethodInter
 
     // Decrypt text.
     return trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_128, $key, $text, MCRYPT_MODE_ECB, $iv));
+  }
+
+  /**
+   * Check dependencies for the encryption method.
+   *
+   * @param string $text
+   *   The text to be checked.
+   * @param string $key
+   *   The key to be checked.
+   *
+   * @return array
+   *   An array of error messages, providing info on missing dependencies.
+   */
+  public function checkDependencies($text = NULL, $key = NULL) {
+    $errors = array();
+
+    if (!function_exists('mcrypt_encrypt')) {
+      $errors[] = t('MCrypt library not installed.');
+    }
+
+    // Check if we have a 128 bit key.
+    if (strlen($key) != 16) {
+      $errors[] = t('This encryption method requires a 128 bit key.');
+    }
+
+    return $errors;
   }
 
 }

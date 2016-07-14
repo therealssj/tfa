@@ -1,9 +1,11 @@
 <?php
 
-namespace Drupal\tfa_basic\Plugin\TfaLogin;
+namespace Drupal\tfa\Plugin\TfaLogin;
 
 use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\encrypt\EncryptionProfileManagerInterface;
+use Drupal\encrypt\EncryptServiceInterface;
 use Drupal\tfa\Plugin\TfaBasePlugin;
 use Drupal\tfa\Plugin\TfaLoginInterface;
 use Drupal\tfa\Plugin\TfaValidationInterface;
@@ -53,8 +55,8 @@ class TfaTrustedBrowser extends TfaBasePlugin implements TfaLoginInterface, TfaV
   /**
    * {@inheritdoc}
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, UserDataInterface $user_data) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition, $user_data);
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, UserDataInterface $user_data, EncryptionProfileManagerInterface $encryption_profile_manager, EncryptServiceInterface $encrypt_service) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $user_data, $encryption_profile_manager, $encrypt_service);
     $config           = \Drupal::config('tfa.settings');
     $this->cookieName = $config->get('cookie_name');
     $this->domain     = $config->get('cookie_domain');
@@ -189,11 +191,11 @@ class TfaTrustedBrowser extends TfaBasePlugin implements TfaLoginInterface, TfaV
   /**
    * Delete users trusted browser.
    *
-   * @param string (optional) $id
-   *   Id of the browser to be purged.
+   * @param string $id
+   *   (optional) Id of the browser to be purged.
    *
    * @return bool TRUE is id found and purged otherwise FALSE.
-   * TRUE is id found and purged otherwise FALSE.
+   *   TRUE is id found and purged otherwise FALSE.
    */
   protected function deleteTrusted($id = '') {
     $result = $this->getUserData('tfa', 'tfa_trusted_browser', $this->uid, $this->userData);
@@ -204,7 +206,7 @@ class TfaTrustedBrowser extends TfaBasePlugin implements TfaLoginInterface, TfaV
       }
     }
     else {
-      $this->deleteUserData('tfa', 'tfa_trsuted_browser', $this->uid, $this->userData);
+      $this->deleteUserData('tfa', 'tfa_trusted_browser', $this->uid, $this->userData);
       return TRUE;
     }
 
@@ -248,7 +250,7 @@ class TfaTrustedBrowser extends TfaBasePlugin implements TfaLoginInterface, TfaV
    * {@inheritdoc}
    */
   public function ready() {
-    // TODO: Implement ready() method.
+    return TRUE;
   }
 
   /**
@@ -256,6 +258,13 @@ class TfaTrustedBrowser extends TfaBasePlugin implements TfaLoginInterface, TfaV
    */
   public function getFallbacks() {
     return ($this->pluginDefinition['fallbacks']) ?: '';
+  }
+
+  /**
+   * Purge all the plugin related data.
+   */
+  public function purge() {
+    $this->deleteTrusted();
   }
 
 }
