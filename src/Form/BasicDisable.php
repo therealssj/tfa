@@ -5,7 +5,6 @@ namespace Drupal\tfa\Form;
 use Drupal\Component\Plugin\PluginManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\tfa\Plugin\TfaValidation\TfaTotp;
 use Drupal\tfa\TfaDataTrait;
 use Drupal\user\Entity\User;
 use Drupal\user\UserDataInterface;
@@ -115,6 +114,7 @@ class BasicDisable extends FormBase {
       '#type' => 'submit',
       '#value' => t('Cancel'),
       '#limit_validation_errors' => array(),
+      '#submit' => array('::cancelForm'),
     );
 
     $form_state->setStorage($storage);
@@ -155,17 +155,16 @@ class BasicDisable extends FormBase {
     }
     $this->tfaSaveTfaData($account->id(), $this->userData, array('status' => FALSE));
 
-    // @todo Need to make this part generic
     // Delete OTP Seed.
-    $validation_plugin = $this->manager->getInstance(['uid' => $account->id()]);
-    $validation_plugin->deleteSeed();
+    $validate_plugin = $this->config('tfa.settings')->get('validate_plugin');
+    $validation_plugin = $this->manager->createInstance($validate_plugin, ['uid' => $account->id()]);
+    $validation_plugin->purge();
 
     $fallbacks = $validation_plugin->getFallbacks();
 
     foreach ($fallbacks as $fallback) {
       $fallback_plugin = $this->manager->createInstance($fallback, ['uid' => $account->id()]);
-      // @todo Need to make a generic function for purging user data.
-      $fallback_plugin->deleteCodes();
+      $fallback_plugin->purge();
     }
 
     \Drupal::logger('tfa')->notice('TFA disabled for user @name UID @uid', array(
@@ -180,6 +179,14 @@ class BasicDisable extends FormBase {
 
     drupal_set_message(t('TFA has been disabled.'));
     $form_state->setRedirect('tfa.overview', ['user' => $account->id()]);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function cancelForm(array &$form, FormStateInterface $form_state) {
+    drupal_set_message('TFA Disable cancelled.', 'warning');
+    $form_state->setRedirect('tfa.overview', ['user' => $this->currentUser()->id()]);
   }
 
 }

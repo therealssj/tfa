@@ -1,6 +1,6 @@
 enabled: 0
-secret_key: ''
 time_skew: 30
+counter_window: 5
 recovery_codes_amount: 10
 setup_plugins: { }
 send_plugins: { }
@@ -10,6 +10,7 @@ fallback_plugins: { }
 help_text: 'Contact support to reset your access'
 name_prefix: ''
 validation_skip: 3
+encryption: ''
 trust_cookie_expiration: 2592000
 cookie_name: 'TB'
 cookie_domain: ''

@@ -103,110 +103,27 @@ class BasicSetup extends FormBase {
       );
     }
     else {
-      // @todo Needs to be fixed. Use case would be multiple fallbacks.
-      // if (!$enabled && empty($storage['steps'])) {
-      // $storage['full_setup'] = TRUE;
-      // $steps = $this->_tfa_basic_full_setup_steps($method);
-      // $storage['steps_left'] = $steps;
-      // $storage['steps_skipped'] = array();
-      // }
-      // Override provided method if operating under multi-step.
-      // Deprecate
-      // if (isset($storage['step_method'])) {
-      // $method = $storage['step_method'];
-      // }
+      if (!$enabled && empty($storage['steps'])) {
+        $storage['full_setup'] = TRUE;
+        $steps = $this->tfaFullSetupSteps();
+        $storage['steps_left'] = $steps;
+        $storage['steps_skipped'] = array();
+      }
+
+      if (isset($storage['step_method'])) {
+        $method = $storage['step_method'];
+      }
+
       // Record methods progressed.
-      // Deprecate
-      // $storage['steps'][] = $method;.
-      // $context = array('uid' => $account->id());
+      $storage['steps'][] = $method;
+
       $plugin_id = $method . '_setup';
       $validation_inst = \Drupal::service('plugin.manager.tfa.setup');
       $setup_plugin = $validation_inst->createInstance($plugin_id, ['uid' => $account->id()]);
       $tfa_setup = new TfaSetup($setup_plugin);
       $form = $tfa_setup->getForm($form, $form_state);
       $storage[$method] = $tfa_setup;
-      // Deprecate this approach. Left here for future reference
-      // switch ($method) {
-      //
-      //  case 'tfa_basic_trusted_browser':
-      //    $context['setup_context'] = ['plugin_definition' => $plugin_definition];
-      //    $form['#title'] = t('TFA setup - Trusted browsers');
-      //    $setup_plugin = new TfaTrustedBrowserSetup($context);
-      //    $tfa_setup = new TfaSetup($setup_plugin);
-      //    $form = $tfa_setup->getForm($form, $form_state);
-      //    $storage[$method] = $tfa_setup;
-      //    break;
-      //
-      //  case 'tfa_basic_sms':
-      //    $context['setup_context'] = ['plugin_definition' => $plugin_definition];
-      //    $form['#title'] = t('TFA setup - SMS');
-      //    // SMS itself has multiple steps. Begin with phone number entry.
-      //    if (empty($storage[$method])) {
-      //      $default_number = tfa_basic_get_mobile_number($account);
-      //      $form['sms_number'] = array(
-      //        '#type' => 'textfield',
-      //        '#title' => t('Mobile phone number'),
-      //        '#required' => TRUE,
-      //        '#description' => t('Enter your mobile phone number that can receive SMS codes. A code will be sent to this number for validation.'),
-      //        '#default_value' => $default_number ?: '',
-      //      );
-      //      // @todo what is this? looks like it should be user specific
-      //      $phone_field = variable_get('tfa_basic_phone_field', '');
-      //      if (!empty($phone_field)) {
-      //        // Report that this is an account field.
-      //        $field = field_info_instance('user', $phone_field, 'user');
-      //        $form['sms_number']['#description'] .= ' ' . t('This number is stored on your account under field %label.', array('%label' => $field['label']));
-      //      }
-      //      $form['send'] = array(
-      //        '#type' => 'submit',
-      //        '#value' => t('Send SMS'),
-      //      );
-      //      if (!empty($tfa_data['data']['sms'])) {
-      //        // Provide disable SMS option.
-      //        $form['actions']['sms_disable'] = array(
-      //          '#type' => 'submit',
-      //          '#value' => t('Disable SMS delivery'),
-      //          '#limit_validation_errors' => array(),
-      //          '#submit' => array('::cancelForm'),
-      //        );
-      //      }
-      //    }
-      //    // Then validate by sending an SMS.
-      //    else {
-      //      $number = tfa_basic_format_number($storage['sms_number']);
-      //      drupal_set_message(t("A code was sent to @number. It may take up to a minute for its arrival.", array('@number' => $number)));
-      //      $tfa_setup = $storage[$method];
-      //      $form = $tfa_setup->getForm($form, $form_state);
-      //      if (isset($storage['full_setup'])) {
-      //        drupal_set_message(t("If the code does not arrive or you entered the wrong number skip this step to continue without SMS delivery. You can enable it after completing the rest of TFA setup."));
-      //      }
-      //      else {
-      //        $form['sms_code']['#description'] .= ' ' . l(t('If the code does not arrive or you entered the wrong number click here to start over.'), 'user/' . $account->uid . '/security/tfa/sms-setup');
-      //      }
-      //
-      //      $storage[$method] = $tfa_setup;
-      //    }
-      //    break;
-      //
-      //  // List previously saved recovery codes. Note, this is not a plugin.
-      //  case 'recovery_codes_list':
-      //    $recovery = new TfaBasicRecoveryCodeSetup(array('uid' => $account->id()));
-      //    $codes = $recovery->getCodes();
-      //
-      //    $output = ['#theme' => 'item_list', '#items' => $codes];
-      //    $output = \Drupal::service('renderer')->render($output);
-      //    $output .= Link::fromTextAndUrl(t('Return to account TFA overview'), Url::fromRoute('tfa.overview', ['user' => $account->id()]))->toString();
-      //    $form['output'] = array(
-      //      '#type' => 'markup',
-      //      '#markup' => $output,
-      //    );
-      //    // Return early.
-      //    return $form;
-      //
-      //  default:
-      //    break;
-      // }
-      // Provide skip button under full setup.
+
       if (isset($storage['full_setup']) && count($storage['steps']) > 1) {
         $count = count($storage['steps_left']);
         $form['actions']['skip'] = array(
@@ -257,20 +174,7 @@ class BasicSetup extends FormBase {
       //        form_set_error('current_pass', t("Incorrect password."));
       //      }.
       return;
-    }
-    // Handle first step of SMS setup.
-    elseif (isset($values['sms_number'])) {
-      // Validate number.
-      $number = $values['sms_number'];
-      $number_errors = tfa_basic_valid_number($number);
-      if (!empty($number_errors)) {
-        foreach ($number_errors as $error) {
-          $form_state->setErrorByName('number', $error);
-        }
-      }
-      return;
-    }
-    // Validate plugin form.
+    } // Validate plugin form.
     elseif (!empty($storage['step_method'])) {
       $method = $storage['step_method'];
       $tfa_setup = $storage[$method];
@@ -305,41 +209,7 @@ class BasicSetup extends FormBase {
       $form_state->setRebuild();
       $form_state->setStorage($storage);
       return;
-    }
-    // Submitting mobile number step.
-    elseif (!empty($values['sms_number'])) {
-      // Send code to number.
-      $storage['sms_number'] = $values['sms_number'];
-      $context = array('uid' => $account->id(), 'mobile_number' => $storage['sms_number']);
-      $setup_plugin = new TfaBasicSmsSetup($context, $storage['sms_number']);
-      $tfa_setup = new TfaSetup($setup_plugin, $context);
-      $tfa_setup->begin();
-      $errors = $tfa_setup->getErrorMessages();
-      if (!empty($errors)) {
-        foreach ($errors as $error) {
-          $form_state->setErrorByName('number', $error);
-        }
-      }
-      else {
-        // No errors so store setup.
-        $storage['tfa_basic_sms'] = $tfa_setup;
-      }
-      $form_state->setRebuild();
-      $form_state->setStorage($storage);
-      return;
-    }
-    // Disabling SMS delivery.
-    if (isset($values['sms_disable']) && $values['op'] === $values['sms_disable']) {
-      $this->tfaSaveTfaData($account->id(), $this->userData, array('sms' => FALSE));
-      drupal_set_message(t('TFA SMS delivery disabled.'));
-      $form_state['redirect'] = 'user/' . $account->id() . '/security/tfa';
-      \Drupal::logger('tfa_basic')->info('TFA SMS disabled for user @name UID @uid', array(
-        '@name' => $account->name,
-        '@uid' => $account->id(),
-      ));
-      return;
-    }
-    // Submitting a plugin form.
+    } // Submitting a plugin form.
     elseif (!empty($storage['step_method'])) {
       $method = $storage['step_method'];
       $skipped_method = FALSE;
@@ -366,18 +236,6 @@ class BasicSetup extends FormBase {
         }
       }
 
-      // Save user TFA settings for relevant plugins that weren't skipped.
-      if (empty($skipped_method) && $method == 'tfa_basic_sms' &&
-        isset($storage['sms_number']) &&
-        in_array('tfa_basic_sms', $storage['steps'])) {
-
-        // Update mobile number if different than stored.
-        if ($storage['sms_number'] !== tfa_basic_get_mobile_number($account)) {
-          tfa_basic_set_mobile_number($account, $storage['sms_number']);
-        }
-        $this->tfaSaveTfaData($account->id(), $this->userData, array('sms' => TRUE));
-      }
-
       // Return if multi-step.
       if ($form_state->getRebuildInfo()) {
         return;
@@ -393,11 +251,10 @@ class BasicSetup extends FormBase {
         // );.
         $data = ['plugins' => $storage['step_method']];
         $this->tfaSaveTfaData($account->id(), $this->userData, $data);
-        \Drupal::logger('tfa_basic')->info('TFA enabled for user @name UID @uid',
-          array(
-            '@name' => $account->getUsername(),
-            '@uid' => $account->id(),
-          ));
+        \Drupal::logger('tfa_basic')->info('TFA enabled for user @name UID @uid', array(
+          '@name' => $account->getUsername(),
+          '@uid' => $account->id(),
+        ));
 
         // @todo Not working, not sure why though.
         // $params = array('account' => $account);
@@ -410,21 +267,20 @@ class BasicSetup extends FormBase {
    * Steps eligble for TFA setup.
    */
   private function tfaFullSetupSteps() {
-    $steps = array();
-    $plugins = array(
-      'tfa_totp',
-      'tfa_basic_sms',
-      'tfa_basic_trusted_browser',
-      'tfa_recovery_code',
-    );
-    $config = $this->config('tfa_basic.settings');
-    foreach ($plugins as $plugin) {
-      if ($plugin === $config->get('tfa_validate_plugin', '') ||
-        in_array($plugin, $config->get('fallback_plugins', array())) ||
-        in_array($plugin, $config->get('login_plugins', array()))) {
-        $steps[] = $plugin;
-      }
+    $config = $this->config('tfa.settings');
+    $enabled_plugin = $config->get('validate_plugin');
+    $steps = [
+      $config->get('validate_plugin'),
+      key($config->get('fallback_plugins')[$enabled_plugin]),
+    ];
+
+    $login_plugins = $config->get('login_plugins');
+
+    foreach ($login_plugins as $login_plugin) {
+      $steps[] = $login_plugin;
     }
+
+    // @todo Add send plugins.
     return $steps;
   }
 

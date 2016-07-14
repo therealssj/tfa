@@ -10,7 +10,6 @@
 function tfa_install() {
   // Set default values.
   \Drupal::configFactory()->getEditable('tfa.settings')
-         ->set('secret_key', \Drupal::service('private_key')->get())
          ->set('name_prefix', \Drupal::config('system.site')->get('name'))
          ->save();
 }

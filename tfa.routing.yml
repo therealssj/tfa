@@ -18,6 +18,16 @@ tfa.settings:
   requirements:
     _permission: 'administer site configuration'
 
+tfa.settings.reset:
+  path: 'admin/config/people/tfa/reset'
+  defaults:
+    _form: '\Drupal\tfa\Form\ResetSettingsForm'
+    _title: 'Reset TFA Settings'
+  options:
+    _admin_route: TRUE
+  requirements:
+    _permission: 'administer site configuration'
+
 tfa.login:
   path: 'tfalogin'
   defaults:
@@ -50,5 +60,5 @@ tfa.disable:
     _form: 'Drupal\tfa\Form\BasicDisable'
     _title: 'TFA disable'
   requirements:
-    _permission: 'setup own tfa'
+    _permission: 'disable own tfa'
     user: \d+

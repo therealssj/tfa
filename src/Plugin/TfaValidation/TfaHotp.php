@@ -3,12 +3,11 @@
 namespace Drupal\tfa\Plugin\TfaValidation;
 
 use Base32\Base32;
-use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Site\Settings;
+use Drupal\encrypt\EncryptionProfileManagerInterface;
+use Drupal\encrypt\EncryptServiceInterface;
 use Drupal\tfa\Plugin\TfaBasePlugin;
 use Drupal\tfa\Plugin\TfaValidationInterface;
-use Drupal\tfa\TfaDataTrait;
 use Drupal\user\UserDataInterface;
 use Otp\GoogleAuthenticator;
 use Otp\Otp;
@@ -27,9 +26,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * )
  */
 class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
-  use DependencySerializationTrait;
-  use TfaDataTrait;
-
   /**
    * Object containing the external validation library.
    *
@@ -54,15 +50,13 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
   /**
    * {@inheritdoc}
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, UserDataInterface $user_data) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition, $user_data);
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, UserDataInterface $user_data, EncryptionProfileManagerInterface $encryption_profile_manager, EncryptServiceInterface $encrypt_service) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $user_data, $encryption_profile_manager, $encrypt_service);
     $this->auth      = new \StdClass();
     $this->auth->otp = new Otp();
     $this->auth->ga  = new GoogleAuthenticator();
     // Allow codes within tolerance range of 3 * 30 second units.
     $this->timeSkew = \Drupal::config('tfa.settings')->get('time_skew');
-    // Recommended: set variable tfa_totp_secret_key in settings.php.
-    $this->encryptionKey   = \Drupal::config('tfa.settings')->get('secret_key');
     $this->alreadyAccepted = FALSE;
   }
 
@@ -74,7 +68,9 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('user.data')
+      $container->get('user.data'),
+      $container->get('encrypt.encryption_profile.manager'),
+      $container->get('encryption')
     );
   }
 
@@ -167,43 +163,6 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
   }
 
   /**
-   * Store validated code to prevent replay attack.
-   *
-   * @param string $code
-   *    The validated code.
-   */
-  protected function storeAcceptedCode($code) {
-    $code = preg_replace('/\s+/', '', $code);
-    $hash = hash('sha1', Settings::getHashSalt() . $code);
-
-    // Store the hash made using the code in users_data.
-    // @todo Use the request time to say something like 'code was requested at ..'?
-    $store_data = ['tfa_accepted_code_' . $hash => REQUEST_TIME];
-    $this->setUserData('tfa', $store_data, $this->uid, $this->userData);
-  }
-
-  /**
-   * Whether code has already been used.
-   *
-   * @param string $code
-   *    The code to be checked.
-   *
-   * @return bool
-   *    TRUE if already used otherwise FALSE
-   */
-  protected function alreadyAcceptedCode($code) {
-    $hash = hash('sha1', Settings::getHashSalt() . $code);
-    // Check if the code has already been used or not.
-    $key    = 'tfa_accepted_code_' . $hash;
-    $result = $this->getUserData('tfa', $key, $this->uid, $this->userData);
-    if (!empty($result)) {
-      $this->alreadyAccepted = TRUE;
-      return TRUE;
-    }
-    return FALSE;
-  }
-
-  /**
    * Returns whether code has already been used or not.
    *
    * @return bool
@@ -255,9 +214,8 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
   /**
    * Delete the seed of the current validated user.
    */
-  public function deleteSeed() {
+  protected function deleteSeed() {
     $this->deleteUserData('tfa', 'tfa_hotp_seed', $this->uid, $this->userData);
-    $this->deleteUserData('tfa', 'tfa_hotp_counter', $this->uid, $this->userData);
   }
 
   /**
@@ -277,6 +235,14 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
     $result = ($this->getUserData('tfa', 'tfa_hotp_counter', $this->uid, $this->userData)) ?: 1;
 
     return $result;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function purge() {
+    $this->deleteSeed();
+    $this->deleteUserData('tfa', 'tfa_hotp_counter', $this->uid, $this->userData);
   }
 
 }

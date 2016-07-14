@@ -46,4 +46,9 @@ interface TfaValidationInterface {
    */
   public function getFallbacks();
 
+  /**
+   * Purge all the plugin related data.
+   */
+  public function purge();
+
 }

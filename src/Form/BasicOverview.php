@@ -52,27 +52,34 @@ class BasicOverview extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state, UserInterface $user = NULL) {
     $output['info'] = array(
-      '#type'   => 'markup',
+      '#type' => 'markup',
       '#markup' => '<p>' . t('Two-factor authentication (TFA) provides additional security for your account. With TFA enabled, you log in to the site with a verification code in addition to your username and password.') . '</p>',
     );
     // $form_state['storage']['account'] = $user;.
     $configuration = $this->config('tfa.settings')->getRawData();
-    $user_tfa      = $this->tfaGetTfaData($user->id(), $this->userData);
-    $enabled       = isset($user_tfa['status']) && $user_tfa['status'] ? TRUE : FALSE;
+    $user_tfa = $this->tfaGetTfaData($user->id(), $this->userData);
+    $enabled = isset($user_tfa['status']) && $user_tfa['status'] ? TRUE : FALSE;
 
     if (!empty($user_tfa)) {
       $date_formatter = \Drupal::service('date.formatter');
       if ($enabled && !empty($user_tfa['data']['plugins'])) {
-        $status_text = t('Status: <strong>TFA enabled</strong>, set @time. <a href=":url">Disable TFA</a>', array(
-          '@time' => $date_formatter->format($user_tfa['saved']),
-          ':url'  => URL::fromRoute('tfa.disable', ['user' => $user->id()])->toString(),
-        ));
+        if ($this->currentUser()->hasPermission('disable own tfa')) {
+          $status_text = t('Status: <strong>TFA enabled</strong>, set @time. <a href=":url">Disable TFA</a>', array(
+            '@time' => $date_formatter->format($user_tfa['saved']),
+            ':url' => URL::fromRoute('tfa.disable', ['user' => $user->id()])->toString(),
+          ));
+        }
+        else {
+          $status_text = t('Status: <strong>TFA enabled</strong>, set @time.', array(
+            '@time' => $date_formatter->format($user_tfa['saved']),
+          ));
+        }
       }
       else {
         $status_text = t('Status: <strong>TFA disabled</strong>, set @time.', array('@time' => $date_formatter->format($user_tfa['saved'])));
       }
       $output['status'] = array(
-        '#type'   => 'markup',
+        '#type' => 'markup',
         '#markup' => '<p>' . $status_text . '</p>',
       );
     }
@@ -94,7 +101,7 @@ class BasicOverview extends FormBase {
     }
     else {
       $output['disabled'] = [
-        '#type'   => 'markup',
+        '#type' => 'markup',
         '#markup' => '<b>Currently there are no enabled plugins.</b>',
       ];
     }
@@ -123,28 +130,25 @@ class BasicOverview extends FormBase {
       case 'tfa_totp':
       case 'tfa_hotp':
         $output = array(
-          'heading'     => array(
-            '#type'  => 'html_tag',
-            '#tag'   => 'h2',
+          'heading' => array(
+            '#type' => 'html_tag',
+            '#tag' => 'h2',
             '#value' => t('TFA application'),
           ),
           'description' => array(
-            '#type'  => 'html_tag',
-            '#tag'   => 'p',
+            '#type' => 'html_tag',
+            '#tag' => 'p',
             '#value' => t('Generate verification codes from a mobile or desktop application.'),
           ),
-          'link'        => array(
+          'link' => array(
             '#theme' => 'links',
             '#links' => array(
               'admin' => array(
                 'title' => !$enabled ? t('Set up application') : t('Reset application'),
-                'url'   => Url::fromRoute(
-                            'tfa.validation.setup',
-                            [
-                              'user'  => $account->id(),
-                              'method' => $plugin,
-                            ]
-                ),
+                'url' => Url::fromRoute('tfa.validation.setup', [
+                  'user' => $account->id(),
+                  'method' => $plugin,
+                ]),
               ),
             ),
           ),
@@ -159,14 +163,14 @@ class BasicOverview extends FormBase {
 
       case 'tfa_recovery_code':
         $output = array(
-          'heading'     => array(
-            '#type'  => 'html_tag',
-            '#tag'   => 'h2',
+          'heading' => array(
+            '#type' => 'html_tag',
+            '#tag' => 'h2',
             '#value' => t('Fallback: Recovery Codes'),
           ),
           'description' => array(
-            '#type'  => 'html_tag',
-            '#tag'   => 'p',
+            '#type' => 'html_tag',
+            '#tag' => 'p',
             '#value' => t('Generate recovery codes to login when you can not do TFA.'),
           ),
         );
@@ -177,20 +181,17 @@ class BasicOverview extends FormBase {
             '#links' => [
               'admin' => [
                 'title' => t('Show Codes'),
-                'url'   => Url::fromRoute(
-                            'tfa.validation.setup',
-                            [
-                              'user'   => $account->id(),
-                              'method' => $plugin,
-                            ]
-                ),
+                'url' => Url::fromRoute('tfa.validation.setup', [
+                  'user' => $account->id(),
+                  'method' => $plugin,
+                ]),
               ],
             ],
           ];
         }
         else {
           $output['disabled'] = [
-            '#type'   => 'markup',
+            '#type' => 'markup',
             '#markup' => '<b>You have not setup a TFA OTP method yet.</b>',
           ];
         }

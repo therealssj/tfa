@@ -96,7 +96,8 @@ class EntryForm extends FormBase {
     //    }
     //
     // Get TFA plugins form.
-    $this->tfaValidationPlugin = $this->tfaValidationManager->getInstance(['uid' => $user->id()]);
+    $validate_plugin = $this->config('tfa.settings')->get('validate_plugin');
+    $this->tfaValidationPlugin = $this->tfaValidationManager->createInstance($validate_plugin, ['uid' => $user->id()]);
     $form = $this->tfaValidationPlugin->getForm($form, $form_state);
 
     if ($this->tfaLoginPlugins = $this->tfaLoginManager->getPlugins(['uid' => $user->id()])) {
