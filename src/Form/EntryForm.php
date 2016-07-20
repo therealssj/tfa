@@ -100,6 +100,7 @@ class EntryForm extends FormBase {
     $this->tfaValidationPlugin = $this->tfaValidationManager->createInstance($validate_plugin, ['uid' => $user->id()]);
     $form = $this->tfaValidationPlugin->getForm($form, $form_state);
 
+
     if ($this->tfaLoginPlugins = $this->tfaLoginManager->getPlugins(['uid' => $user->id()])) {
       foreach ($this->tfaLoginPlugins as $login_plugin) {
         if (method_exists($login_plugin, 'getForm')) {
@@ -114,6 +115,8 @@ class EntryForm extends FormBase {
     );
 
     return $form;
+
+
   }
 
   /**
@@ -126,9 +129,12 @@ class EntryForm extends FormBase {
     $values = $form_state->getValues();
 
     if (!$validated && isset($fallbacks[$config->get('validate_plugin')])) {
+      $form_state->clearErrors();
+      $errors = $this->tfaValidationPlugin->getErrorMessages();
+      $form_state->setErrorByName(key($errors), current($errors));
       foreach ($fallbacks[$config->get('validate_plugin')] as $fallback => $val) {
         $fallback_plugin = $this->tfaValidationManager->createInstance($fallback, ['uid' => $values['account']->id()]);
-        if (!$fallback_plugin->validate($values['code'])) {
+        if (!$fallback_plugin->validateForm($form, $form_state)) {
           $errors = $fallback_plugin->getErrorMessages();
           $form_state->setErrorByName(key($errors), current($errors));
         }
@@ -137,11 +143,6 @@ class EntryForm extends FormBase {
           break;
         }
       }
-    }
-    else {
-      $form_state->clearErrors();
-      $errors = $this->tfaValidationPlugin->getErrorMessages();
-      $form_state->setErrorByName(key($errors), current($errors));
     }
 
 

@@ -89,7 +89,8 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
    * {@inheritdoc}
    */
   public function validateForm(array $form, FormStateInterface $form_state) {
-    return $this->validate($form_state['values']['recover']);
+    $values = $form_state->getValues();
+    return $this->validate($values['code']);
   }
 
   /**
