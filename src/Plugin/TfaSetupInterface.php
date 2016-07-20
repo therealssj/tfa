@@ -57,4 +57,15 @@ interface TfaSetupInterface {
    */
   public function getHelpLinks();
 
+  /**
+   * Plugin overview page.
+   *
+   * @param array $params
+   *   Parameters to setup the overview information.
+   *
+   * @return array
+   *   The overview form.
+   */
+  public function getOverview($params);
+
 }

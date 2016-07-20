@@ -133,7 +133,11 @@ class TfaLoginForm extends UserLoginForm {
 
     // Setup TFA.
     if (isset($tfaValidationPlugin)) {
-      if ($account->hasPermission('require tfa') && !$this->loginComplete($account) && !$this->ready($tfaValidationPlugin) && $tfa_enabled) {
+      if ($account->hasPermission('require tfa') && !$this->ready($tfaValidationPlugin) && $tfa_enabled && $this->loginAllowed()) {
+        user_login_finalize($account);
+        $form_state->setRedirect('<front>');
+      }
+      elseif ($account->hasPermission('require tfa') && !$this->ready($tfaValidationPlugin) && $tfa_enabled) {
         $tfa_data = $this->tfaGetTfaData($account->id(), $this->userData);
         $validation_skipped = (isset($tfa_data['validation_skipped'])) ? $tfa_data['validation_skipped'] : 0;
         if ($allowed_skips && ($left = $allowed_skips - ++$validation_skipped) >= 0) {
@@ -145,12 +149,8 @@ class TfaLoginForm extends UserLoginForm {
           user_login_finalize($account);
           $form_state->setRedirect('<front>');
         }
-        else {
-          drupal_set_message(t('Login disallowed. You are required to setup two-factor authentication. Please contact a site administrator.'), 'error');
-          $form_state->setRedirect('user.page');
-        }
       }
-      elseif (!$this->loginComplete($account) && $this->ready($tfaValidationPlugin) && !$this->loginAllowed($account) && $tfa_enabled) {
+      elseif ($this->ready($tfaValidationPlugin) && !$this->loginAllowed($account) && $tfa_enabled) {
 
         // Restart flood levels, session context, and TFA process.
         // flood_clear_event('tfa_validate');
@@ -175,8 +175,7 @@ class TfaLoginForm extends UserLoginForm {
             'user' => $account->id(),
             'hash' => $login_hash,
           ]
-        // 'tfa/' . $account->id() . '/' . $login_hash
-        // array('query' => $query),.
+
         );
       }
       else {
@@ -204,24 +203,6 @@ class TfaLoginForm extends UserLoginForm {
     if (isset($route)) {
       $form_state->setRedirect($route);
     }
-  }
-
-  /**
-   * Check if TFA process has completed so authentication should not be stopped.
-   *
-   * @param \Drupal\Core\Session\AccountInterface $account
-   *   The current user account.
-   *
-   * @return bool
-   *   Whether the login has already been completed or not.
-   */
-  protected function loginComplete(AccountInterface $account) {
-    // TFA master login allowed switch is set by tfa_login().
-    //    $tfa_session = $this->session->get('tfa');
-    //    if (isset($tfa_session[$account->id()]['login']) && $tfa_session[$account->id()]['login'] === TRUE) {
-    //      return TRUE;
-    //    }.
-    return FALSE;
   }
 
   /**

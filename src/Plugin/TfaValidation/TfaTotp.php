@@ -5,6 +5,7 @@ namespace Drupal\tfa\Plugin\TfaValidation;
 use Base32\Base32;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 use Drupal\encrypt\EncryptionProfileManagerInterface;
 use Drupal\encrypt\EncryptServiceInterface;
 use Drupal\tfa\Plugin\TfaBasePlugin;
@@ -117,10 +118,10 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
   public function validateForm(array $form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
     if (!$this->validate($values['code'])) {
-      $form_state->setErrorByName('code', t('Invalid application code. Please try again.'));
+      $this->errorMessages['code'] = t('Invalid application code. Please try again.');
       if ($this->alreadyAccepted) {
         $form_state->clearErrors();
-        $form_state->setErrorByName('code', t('Invalid code, it was recently used for a login. Please try a new code.'));
+        $this->errorMessages['code'] = t('Invalid code, it was recently used for a login. Please try a new code.');
       }
       return FALSE;
     }
@@ -230,7 +231,39 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
   }
 
   /**
-   * Purge all the plugin related data.
+   * {@inheritdoc}
+   */
+  public function getOverview($params) {
+    $output = array(
+      'heading' => array(
+        '#type' => 'html_tag',
+        '#tag' => 'h2',
+        '#value' => t('TFA application'),
+      ),
+      'description' => array(
+        '#type' => 'html_tag',
+        '#tag' => 'p',
+        '#value' => t('Generate verification codes from a mobile or desktop application.'),
+      ),
+      'link' => array(
+        '#theme' => 'links',
+        '#links' => array(
+          'admin' => array(
+            'title' => !$params['enabled'] ? t('Set up application') : t('Reset application'),
+            'url' => Url::fromRoute('tfa.validation.setup', [
+              'user' => $params['account']->id(),
+              'method' => $params['plugin_id'],
+            ]),
+          ),
+        ),
+      ),
+    );
+
+    return $output;
+  }
+
+  /**
+   * {@inheritdoc}
    */
   public function purge() {
     $this->deleteSeed();

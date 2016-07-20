@@ -100,7 +100,15 @@ class SettingsForm extends ConfigFormBase {
    * @return static
    */
   public static function create(ContainerInterface $container) {
-    return new static($container->get('config.factory'), $container->get('plugin.manager.tfa.login'), $container->get('plugin.manager.tfa.send'), $container->get('plugin.manager.tfa.validation'), $container->get('plugin.manager.tfa.setup'), $container->get('user.data'), $container->get('encrypt.encryption_profile.manager'));
+    return new static(
+      $container->get('config.factory'),
+      $container->get('plugin.manager.tfa.login'),
+      $container->get('plugin.manager.tfa.send'),
+      $container->get('plugin.manager.tfa.validation'),
+      $container->get('plugin.manager.tfa.setup'),
+      $container->get('user.data'),
+      $container->get('encrypt.encryption_profile.manager')
+    );
   }
 
   /**
@@ -424,7 +432,21 @@ class SettingsForm extends ConfigFormBase {
     $send_plugins = $form_state->getValue('tfa_send') ?: [];
     $login_plugins = $form_state->getValue('tfa_login') ?: [];
     $encryption_profile = $form_state->getValue('encryption');
-    $this->config('tfa.settings')->set('enabled', $form_state->getValue('tfa_enabled'))->set('time_skew', $form_state->getValue('time_skew'))->set('counter_window', $form_state->getValue('counter_window'))->set('recovery_codes_amount', $form_state->getValue('recovery_codes_amount'))->set('name_prefix', $form_state->getValue('name_prefix'))->set('setup_plugins', array_filter($setup_plugins))->set('send_plugins', array_filter($send_plugins))->set('login_plugins', array_filter($login_plugins))->set('validate_plugin', $validate_plugin)->set('fallback_plugins', $fallback_plugins)->set('validation_skip', $form_state->getValue('validation_skip'))->set('encryption', $form_state->getValue('encryption_profile'))->save();
+    $this->config('tfa.settings')
+      ->set('enabled', $form_state->getValue('tfa_enabled'))
+      ->set('time_skew', $form_state->getValue('time_skew'))
+      ->set('counter_window', $form_state->getValue('counter_window'))
+      ->set('recovery_codes_amount', $form_state->getValue('recovery_codes_amount'))
+      ->set('name_prefix', $form_state->getValue('name_prefix'))
+      ->set('setup_plugins', array_filter($setup_plugins))
+      ->set('send_plugins', array_filter($send_plugins))
+      ->set('login_plugins', array_filter($login_plugins))
+      ->set('validate_plugin', $validate_plugin)
+      ->set('fallback_plugins', $fallback_plugins)
+      ->set('validation_skip', $form_state
+      ->getValue('validation_skip'))
+      ->set('encryption', $form_state->getValue('encryption_profile'))
+      ->save();
 
     parent::submitForm($form, $form_state);
   }

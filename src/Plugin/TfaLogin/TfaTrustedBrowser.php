@@ -22,8 +22,6 @@ use Drupal\user\UserDataInterface;
  * )
  */
 class TfaTrustedBrowser extends TfaBasePlugin implements TfaLoginInterface, TfaValidationInterface {
-  use TfaDataTrait;
-
   /**
    * Trust browser.
    *
@@ -39,13 +37,6 @@ class TfaTrustedBrowser extends TfaBasePlugin implements TfaLoginInterface, TfaV
   protected $cookieName;
 
   /**
-   * The domain name.
-   *
-   * @var string
-   */
-  protected $domain;
-
-  /**
    * Cookie expiration time.
    *
    * @var string
@@ -58,15 +49,17 @@ class TfaTrustedBrowser extends TfaBasePlugin implements TfaLoginInterface, TfaV
   public function __construct(array $configuration, $plugin_id, $plugin_definition, UserDataInterface $user_data, EncryptionProfileManagerInterface $encryption_profile_manager, EncryptServiceInterface $encrypt_service) {
     parent::__construct($configuration, $plugin_id, $plugin_definition, $user_data, $encryption_profile_manager, $encrypt_service);
     $config           = \Drupal::config('tfa.settings');
-    $this->cookieName = $config->get('cookie_name');
-    $this->domain     = $config->get('cookie_domain');
+    $this->cookieName = $config->get('cookie_name') ?: 'TFA';
     // Expiration defaults to 30 days.
-    $this->expiration = $config->get('trust_cookie_expiration', 3600 * 24 * 30);
+    $this->expiration = $config->get('trust_cookie_expiration') ?: 3600 * 24 * 30;
     $this->userData   = $user_data;
   }
 
   /**
+   * Check whether login is allowed.
+   *
    * @return bool
+   *   If login cookie is set TRUE otherwise FALSE.
    */
   public function loginAllowed() {
     if (isset($_COOKIE[$this->cookieName]) && ($did = $this->trustedBrowser($_COOKIE[$this->cookieName])) !== FALSE) {
@@ -137,21 +130,25 @@ class TfaTrustedBrowser extends TfaBasePlugin implements TfaLoginInterface, TfaV
    *   The custom browser name.
    */
   protected function setTrusted($id, $name = '') {
+    // Currently broken.
     // Store id for account.
-    $record = [
-      'tfa_trusted_browser' => [
-        'value'   => $id,
-        'created' => REQUEST_TIME,
-        'ip'      => \Drupal::request()->getClientIp(),
-        'name'    => $name,
-      ],
-    ];
+    //$records = $this->getUserData('tfa', 'tfa_trusted_browser', $this->configuration['uid'], $this->userData) ?: [];
+    //$records[$id] = serialize([
+    //  'created' => REQUEST_TIME,
+    //  'ip' => \Drupal::request()->getClientIp(),
+    //  'name' => $name,
+    //]);
+    //
+    //$data = [
+    //  'tfa_trusted_browser' => $records,
+    //];
 
-    $this->setUserData('tfa', $record, $this->configuration['uid'], $this->userData);
+    $this->setUserData('tfa', $data, $this->configuration['uid'], $this->userData);
     // Issue cookie with ID.
     $cookie_secure = ini_get('session.cookie_secure');
     $expiration    = REQUEST_TIME + $this->expiration;
-    setcookie($this->cookieName, $id, $expiration, '/', $this->domain, (empty($cookie_secure) ? FALSE : TRUE), TRUE);
+    $domain = FALSE;
+    setcookie($this->cookieName, $id, $expiration, '/', $domain, (empty($cookie_secure) ? FALSE : TRUE), TRUE);
     $name = empty($name) ? $this->getAgent() : $name;
     // TODO - use services defined in module instead this procedural way.
     \Drupal::logger('tfa')->info('Set trusted browser for user UID !uid, browser @name', array('@name' => $name, '!uid' => $this->uid));
@@ -201,7 +198,11 @@ class TfaTrustedBrowser extends TfaBasePlugin implements TfaLoginInterface, TfaV
     $result = $this->getUserData('tfa', 'tfa_trusted_browser', $this->uid, $this->userData);
     if ($id) {
       if (isset($result[$id])) {
-        $this->setUserData('tfa', $result, $this->uid, $this->userData);
+        unset($result[$id]);
+        $data = [
+          'tfa_trusted_browser' => $result,
+        ];
+        $this->setUserData('tfa', $data, $this->uid, $this->userData);
         return TRUE;
       }
     }

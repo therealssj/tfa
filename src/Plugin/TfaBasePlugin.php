@@ -169,22 +169,6 @@ abstract class TfaBasePlugin extends PluginBase {
   }
 
   /**
-   * Generate a random string of characters of length $this->codeLength.
-   *
-   * @return string
-   *   A random string.
-   */
-  protected function generate() {
-    $characters = '123456789abcdefghijklmnpqrstuvwxyz';
-    $string = '';
-    $max = strlen($characters) - 1;
-    for ($p = 0; $p < $this->codeLength; $p++) {
-      $string .= $characters[mt_rand(0, $max)];
-    }
-    return $string;
-  }
-
-  /**
    * Encrypt a plaintext string.
    *
    * Should be used when writing codes to storage.
