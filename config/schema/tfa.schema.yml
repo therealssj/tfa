@@ -25,8 +25,8 @@ tfa.settings:
     setup_plugins:
       type: sequence
       label: 'TFA plugins'
-    send_plugins:
-      type: sequence
+    send_plugin:
+      type: string
       label: 'Send plugins'
     login_plugins:
       type: mapping
@@ -50,9 +50,6 @@ tfa.settings:
     cookie_name:
       type: string
       label: 'Cookie name of TFA trusted browser cookie. Default is "TB".'
-    cookie_domain:
-      type: string
-      label: 'Cookie domain. Default is empty string.'
     help_text:
       type: string
       label: 'Text to display on help page. Plain text only.'

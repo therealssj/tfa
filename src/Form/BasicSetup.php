@@ -246,12 +246,9 @@ class BasicSetup extends FormBase {
 
       // Log and notify if this was full setup.
       if (!empty($storage['step_method'])) {
-        // $data = array(
-        //  'plugins' => array_diff($storage['steps'], $storage['steps_skipped']),
-        // );.
         $data = ['plugins' => $storage['step_method']];
         $this->tfaSaveTfaData($account->id(), $this->userData, $data);
-        \Drupal::logger('tfa_basic')->info('TFA enabled for user @name UID @uid', array(
+        \Drupal::logger('tfa')->info('TFA enabled for user @name UID @uid', array(
           '@name' => $account->getUsername(),
           '@uid' => $account->id(),
         ));

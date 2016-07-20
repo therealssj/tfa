@@ -6,6 +6,11 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\tfa\TfaDataTrait;
+use Drupal\tfa\TfaLoginPluginManager;
+use Drupal\tfa\TfaSendPluginManager;
+use Drupal\tfa\TfaSetup;
+use Drupal\tfa\TfaSetupPluginManager;
+use Drupal\tfa\TfaValidationPluginManager;
 use Drupal\user\UserDataInterface;
 use Drupal\user\UserInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -15,6 +20,13 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class BasicOverview extends FormBase {
   use TfaDataTrait;
+
+  /**
+   * The setup plugin manager to fetch setup information.
+   *
+   * @var \Drupal\tfa\TfaLoginPluginManager
+   */
+  protected $tfaSetup;
 
   /**
    * Provides the user data service object.
@@ -27,17 +39,23 @@ class BasicOverview extends FormBase {
    * BasicOverview constructor.
    *
    * @param \Drupal\user\UserDataInterface $user_data
-   *   The user data serivce.
+   *   The user data service.
+   * @param \Drupal\tfa\TfaSetupPluginManager $tfa_setup_manager
+   *   The setup plugin manager.
    */
-  public function __construct(UserDataInterface $user_data) {
+  public function __construct(UserDataInterface $user_data, TfaSetupPluginManager $tfa_setup_manager) {
     $this->userData = $user_data;
+    $this->tfaSetup = $tfa_setup_manager;
   }
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    return new static($container->get('user.data'));
+    return new static(
+      $container->get('user.data'),
+      $container->get('plugin.manager.tfa.setup')
+    );
   }
 
   /**
@@ -85,6 +103,7 @@ class BasicOverview extends FormBase {
     }
 
     if ($configuration['enabled']) {
+      $enabled = isset($user_tfa['status']) && $user_tfa['status'] ? TRUE : FALSE;
       // Validation plugin setup.
       $enabled_plugin = $configuration['validate_plugin'];
       $enabled_fallback_plugin = '';
@@ -94,9 +113,22 @@ class BasicOverview extends FormBase {
 
       $output['app'] = $this->tfaPluginSetupFormOverview($enabled_plugin, $user, $user_tfa);
 
-      if ($enabled_fallback_plugin) {
-        // Fallback Setup.
-        $output['recovery'] = $this->tfaPluginSetupFormOverview($enabled_fallback_plugin, $user, $user_tfa);
+      if ($enabled) {
+        $login_plugins = $configuration['login_plugins'];
+        foreach ($login_plugins as $lplugin_id) {
+          $output[$lplugin_id] = $this->tfaPluginSetupFormOverview($lplugin_id, $user, $user_tfa);
+
+        }
+
+        $send_plugin = $configuration['send_plugin'];
+        if ($send_plugin) {
+          $output[$send_plugin] = $this->tfaPluginSetupFormOverview($send_plugin, $user, $user_tfa);
+        }
+
+        if ($enabled_fallback_plugin) {
+          // Fallback Setup.
+          $output['recovery'] = $this->tfaPluginSetupFormOverview($enabled_fallback_plugin, $user, $user_tfa);
+        }
       }
     }
     else {
@@ -126,78 +158,14 @@ class BasicOverview extends FormBase {
     $enabled = isset($user_tfa['status']) && $user_tfa['status'] ? TRUE : FALSE;
 
     $output = array();
-    switch ($plugin) {
-      case 'tfa_totp':
-      case 'tfa_hotp':
-        $output = array(
-          'heading' => array(
-            '#type' => 'html_tag',
-            '#tag' => 'h2',
-            '#value' => t('TFA application'),
-          ),
-          'description' => array(
-            '#type' => 'html_tag',
-            '#tag' => 'p',
-            '#value' => t('Generate verification codes from a mobile or desktop application.'),
-          ),
-          'link' => array(
-            '#theme' => 'links',
-            '#links' => array(
-              'admin' => array(
-                'title' => !$enabled ? t('Set up application') : t('Reset application'),
-                'url' => Url::fromRoute('tfa.validation.setup', [
-                  'user' => $account->id(),
-                  'method' => $plugin,
-                ]),
-              ),
-            ),
-          ),
-        );
-        break;
-
-      case 'tfa_basic_sms':
-        break;
-
-      case 'tfa_basic_trusted_browser':
-        break;
-
-      case 'tfa_recovery_code':
-        $output = array(
-          'heading' => array(
-            '#type' => 'html_tag',
-            '#tag' => 'h2',
-            '#value' => t('Fallback: Recovery Codes'),
-          ),
-          'description' => array(
-            '#type' => 'html_tag',
-            '#tag' => 'p',
-            '#value' => t('Generate recovery codes to login when you can not do TFA.'),
-          ),
-        );
-
-        if ($enabled) {
-          $output['link'] = [
-            '#theme' => 'links',
-            '#links' => [
-              'admin' => [
-                'title' => t('Show Codes'),
-                'url' => Url::fromRoute('tfa.validation.setup', [
-                  'user' => $account->id(),
-                  'method' => $plugin,
-                ]),
-              ],
-            ],
-          ];
-        }
-        else {
-          $output['disabled'] = [
-            '#type' => 'markup',
-            '#markup' => '<b>You have not setup a TFA OTP method yet.</b>',
-          ];
-        }
-        break;
-
-    }
+    $params = [
+      'enabled' => $enabled,
+      'account' => $account,
+      'plugin_id' => $plugin,
+    ];
+    $output = $this->tfaSetup
+                ->createInstance($plugin . '_setup', ['uid' => $account->id()])
+                ->getOverview($params);
     return $output;
   }
 

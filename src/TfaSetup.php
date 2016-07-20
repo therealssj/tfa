@@ -22,11 +22,6 @@ class TfaSetup {
    *
    * @param TfaSetupInterface $plugin
    *   Plugins to instansiate.
-   *
-   *   Must include key:
-   *
-   *     - 'setup'
-   *       Class name of TfaBasePlugin implementing TfaSetupPluginInterface.
    */
   public function __construct(TfaSetupInterface $plugin) {
     $this->setupPlugin = $plugin;
