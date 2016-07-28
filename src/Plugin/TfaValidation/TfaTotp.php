@@ -25,7 +25,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   description = @Translation("TFA Totp Validation Plugin"),
  *   fallbacks = {
  *    "tfa_recovery_code"
- *   }
+ *   },
+ *   isFallback = FALSE
  * )
  */
 class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
@@ -226,6 +227,13 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
   /**
    * {@inheritdoc}
    */
+  public function purge() {
+    $this->deleteSeed();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function getFallbacks() {
     return ($this->pluginDefinition['fallbacks']) ?: '';
   }
@@ -233,40 +241,8 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
   /**
    * {@inheritdoc}
    */
-  public function getOverview($params) {
-    $output = array(
-      'heading' => array(
-        '#type' => 'html_tag',
-        '#tag' => 'h2',
-        '#value' => t('TFA application'),
-      ),
-      'description' => array(
-        '#type' => 'html_tag',
-        '#tag' => 'p',
-        '#value' => t('Generate verification codes from a mobile or desktop application.'),
-      ),
-      'link' => array(
-        '#theme' => 'links',
-        '#links' => array(
-          'admin' => array(
-            'title' => !$params['enabled'] ? t('Set up application') : t('Reset application'),
-            'url' => Url::fromRoute('tfa.validation.setup', [
-              'user' => $params['account']->id(),
-              'method' => $params['plugin_id'],
-            ]),
-          ),
-        ),
-      ),
-    );
-
-    return $output;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function purge() {
-    $this->deleteSeed();
+  public function isFallback() {
+    return ($this->pluginDefinition['isFallback']) ?: FALSE;
   }
 
 }

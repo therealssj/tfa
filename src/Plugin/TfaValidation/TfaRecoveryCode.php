@@ -20,7 +20,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * @TfaValidation(
  *   id = "tfa_recovery_code",
  *   label = @Translation("TFA Recovery Code"),
- *   description = @Translation("TFA Recovery Code Validation Plugin")
+ *   description = @Translation("TFA Recovery Code Validation Plugin"),
+ *   isFallback = TRUE
  * )
  */
 class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
@@ -206,6 +207,13 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
   /**
    * {@inheritdoc}
    */
+  public function purge() {
+    $this->deleteCodes();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function getFallbacks() {
     return ($this->pluginDefinition['fallbacks']) ?: '';
   }
@@ -213,8 +221,8 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
   /**
    * {@inheritdoc}
    */
-  public function purge() {
-    $this->deleteCodes();
+  public function isFallback() {
+    return ($this->pluginDefinition['isFallback']) ?: FALSE;
   }
 
 }

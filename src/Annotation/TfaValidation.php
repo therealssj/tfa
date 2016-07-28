@@ -43,4 +43,11 @@ class TfaValidation extends Plugin {
    */
   public $fallbacks;
 
+  /**
+   * Whether the plugin is a fallback or not.
+   *
+   * @var bool
+   */
+  public $isFallback;
+
 }

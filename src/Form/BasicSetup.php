@@ -59,7 +59,7 @@ class BasicSetup extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, User $user = NULL, $method = 'tfa_totp') {
+  public function buildForm(array $form, FormStateInterface $form_state, User $user = NULL, $method = 'tfa_totp', $reset = 0) {
     $plugin_definitions = $this->manager->getDefinitions();
     $account = User::load($this->currentUser()->id());
 
@@ -121,7 +121,7 @@ class BasicSetup extends FormBase {
       $validation_inst = \Drupal::service('plugin.manager.tfa.setup');
       $setup_plugin = $validation_inst->createInstance($plugin_id, ['uid' => $account->id()]);
       $tfa_setup = new TfaSetup($setup_plugin);
-      $form = $tfa_setup->getForm($form, $form_state);
+      $form = $tfa_setup->getForm($form, $form_state, $reset);
       $storage[$method] = $tfa_setup;
 
       if (isset($storage['full_setup']) && count($storage['steps']) > 1) {

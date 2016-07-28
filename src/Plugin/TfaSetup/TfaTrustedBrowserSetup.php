@@ -2,6 +2,7 @@
 namespace Drupal\tfa\Plugin\TfaSetup;
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 use Drupal\encrypt\EncryptionProfileManagerInterface;
 use Drupal\encrypt\EncryptServiceInterface;
 use Drupal\tfa\Plugin\TfaLogin\TfaTrustedBrowser;
@@ -35,8 +36,8 @@ class TfaTrustedBrowserSetup extends TfaTrustedBrowser implements TfaSetupInterf
       '#markup' => '<p>' . t("Trusted browsers are a method for simplifying login by avoiding verification code entry for a set amount of time, @time days from marking a browser as trusted. After !time days, to log in you'll need to enter a verification code with your username and password during which you can again mark the browser as trusted.", array('@time' => $time)) . '</p>',
     );
     // Present option to trust this browser if its not currently trusted.
-    if (isset($_COOKIE[$this->cookieName]) && ($browser_id = $this->trustedBrowser($_COOKIE[$this->cookieName])) !== FALSE) {
-      $current_trusted = $browser_id;
+    if (isset($_COOKIE[$this->cookieName]) && $this->trustedBrowser($_COOKIE[$this->cookieName]) !== FALSE) {
+      $current_trusted = $_COOKIE[$this->cookieName];
     }
     else {
       $current_trusted = FALSE;
@@ -67,14 +68,17 @@ class TfaTrustedBrowserSetup extends TfaTrustedBrowser implements TfaSetupInterf
         '#tree' => TRUE,
       );
 
-      foreach ($existing as $browser) {
+      foreach ($existing as $browser_id => $browser) {
         $date_formatter = \Drupal::service('date.formatter');
         $vars = array(
           '!set' => $date_formatter->format($browser['created']),
-          '!time' => $date_formatter->format($browser['last_used']),
         );
 
-        if ($current_trusted == $browser['id']) {
+        if (isset($browser['last_used'])) {
+          $vars['!time'] = $date_formatter->format($browser['last_used']);
+        }
+
+        if ($current_trusted == $browser_id) {
           $name = '<strong>' . t('@name (current browser)', array('@name' => $browser['name'])) . '</strong>';
         }
         else {
@@ -87,7 +91,7 @@ class TfaTrustedBrowserSetup extends TfaTrustedBrowser implements TfaSetupInterf
         else {
           $message = t('Marked trusted !set, last used for log in !time', $vars);
         }
-        $form['existing']['trusted_browser_' . $browser['id']] = array(
+        $form['existing']['trusted_browser_' . $browser_id] = array(
           '#type' => 'checkbox',
           '#title' => $name,
           '#description' => $message,
@@ -173,12 +177,7 @@ class TfaTrustedBrowserSetup extends TfaTrustedBrowser implements TfaSetupInterf
     return $this->deleteTrusted();
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function getHelpLinks() {
-    return $this->pluginDefinition['help_links'];
-  }
+
 
   /**
    * {@inheritdoc}
@@ -190,12 +189,12 @@ class TfaTrustedBrowserSetup extends TfaTrustedBrowser implements TfaSetupInterf
       $vars = array(
         '!set' => $date_formatter->format($device['created']),
         '@browser' => $device['name'],
-        '!time' => $date_formatter->format($device['last_used']),
       );
       if (empty($device['last_used'])) {
         $message = t('@browser, set !set', $vars);
       }
       else {
+        $vars['!time'] = $date_formatter->format($device['last_used']);
         $message = t('@browser, set !set, last used !time', $vars);
       }
       $trusted_browsers[] = $message;
@@ -221,14 +220,26 @@ class TfaTrustedBrowserSetup extends TfaTrustedBrowser implements TfaSetupInterf
       );
     }
     $output['link'] = array(
-      '#prefix' => '<p>',
-      '#theme' => 'link',
-      '#path' => 'user/' . $params['account']->id() . '/security/tfa/trusted-browsers',
-      '#text' => t('Set trusted browsers'),
-      '#options' => array('attributes' => array(), 'html' => FALSE),
-      '#suffix' => '</p>',
+      '#theme' => 'links',
+      '#links' => array(
+        'admin' => array(
+          'title' => 'Configure Trusted Browsers',
+          'url' => Url::fromRoute('tfa.validation.setup', [
+            'user' => $params['account']->id(),
+            'method' => $params['plugin_id'],
+          ]),
+        ),
+      ),
     );
 
     return $output;
   }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getHelpLinks() {
+    return $this->pluginDefinition['help_links'];
+  }
+
 }

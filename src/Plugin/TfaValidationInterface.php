@@ -39,6 +39,11 @@ interface TfaValidationInterface {
   public function validateForm(array $form, FormStateInterface $form_state);
 
   /**
+   * Purge all the plugin related data.
+   */
+  public function purge();
+
+  /**
    * Get validation plugin fallbacks.
    *
    * @return string[]
@@ -47,8 +52,14 @@ interface TfaValidationInterface {
   public function getFallbacks();
 
   /**
-   * Purge all the plugin related data.
+   * Is the validation plugin a fallback?
+   *
+   * If the plugin is a fallback we remove it from the validation
+   * plugins list and show it only in the fallbacks list.
+   *
+   * @return bool
+   *   TRUE if plugin is a fallback otherwise FALSE
    */
-  public function purge();
+  public function isFallback();
 
 }

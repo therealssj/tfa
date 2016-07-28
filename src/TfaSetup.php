@@ -48,8 +48,8 @@ class TfaSetup {
    * @return array
    *   Form API array.
    */
-  public function getForm(array $form, FormStateInterface &$form_state) {
-    return $this->setupPlugin->getSetupForm($form, $form_state);
+  public function getForm(array $form, FormStateInterface &$form_state, $reset = 0) {
+    return $this->setupPlugin->getSetupForm($form, $form_state, $reset);
   }
 
   /**

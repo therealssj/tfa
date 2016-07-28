@@ -133,8 +133,9 @@ class TfaLoginForm extends UserLoginForm {
 
     // Setup TFA.
     if (isset($tfaValidationPlugin)) {
-      if ($account->hasPermission('require tfa') && !$this->ready($tfaValidationPlugin) && $tfa_enabled && $this->loginAllowed()) {
+      if ($account->hasPermission('require tfa') && $this->ready($tfaValidationPlugin) && $tfa_enabled && $this->loginAllowed()) {
         user_login_finalize($account);
+        drupal_set_message('You have logged in on a trusted browser.');
         $form_state->setRedirect('<front>');
       }
       elseif ($account->hasPermission('require tfa') && !$this->ready($tfaValidationPlugin) && $tfa_enabled) {
@@ -179,13 +180,16 @@ class TfaLoginForm extends UserLoginForm {
         );
       }
       else {
-        return parent::submitForm($form, $form_state);
+        drupal_set_message(t('Two-factor authentication is enabled but misconfigured. Please contact a site administrator.'), 'error');
+        $form_state->setRedirect('user.page');
       }
     }
     else {
       drupal_set_message(t('Two-factor authentication is enabled but misconfigured. Please contact a site administrator.'), 'error');
       $form_state->setRedirect('user.page');
     }
+
+
   }
 
   /**

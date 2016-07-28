@@ -133,11 +133,15 @@ class SettingsForm extends ConfigFormBase {
 
     // Get Validation Plugins.
     $validate_plugins = $this->tfaValidation->getDefinitions();
-
     // Get validation plugin labels and their fallbacks.
     $validate_plugins_labels = [];
     $validate_plugins_fallbacks = [];
+    $fallback_plugins_labels = [];
     foreach ($validate_plugins as $plugin) {
+      if ($plugin['isFallback']) {
+        $fallback_plugins_labels[$plugin['id']] = $plugin['label']->render();
+        continue;
+      }
       $validate_plugins_labels[$plugin['id']] = $plugin['label']->render();
       if (isset($plugin['fallbacks'])) {
         $validate_plugins_fallbacks[$plugin['id']] = $plugin['fallbacks'];
@@ -196,7 +200,7 @@ class SettingsForm extends ConfigFormBase {
       $form['tfa_fallback'] = array(
         '#type' => 'fieldset',
         '#title' => t('Validation fallback plugins'),
-        '#description' => t('Fallback plugins and order. Note, if a fallback plugin is not setup for an account it will not be active in the TFA form.'),
+        '#description' => t('Fallback plugins and order.'),
         '#states' => $enabled_state,
         '#tree' => TRUE,
       );
@@ -214,7 +218,7 @@ class SettingsForm extends ConfigFormBase {
             $fallback_value = (@$enabled_fallback_plugins[$plugin][$fallback]['enable']) ?: 1;
             $form['tfa_fallback'][$plugin][$fallback] = array(
               'enable' => array(
-                '#title' => $validate_plugins_labels[$fallback],
+                '#title' => $fallback_plugins_labels[$fallback],
                 '#type' => 'checkbox',
                 '#default_value' => $fallback_value,
                 '#states' => $fallback_state,
@@ -308,7 +312,6 @@ class SettingsForm extends ConfigFormBase {
       '#description' => 'Number of Recovery Codes To Generate.',
       '#states' => $enabled_state,
       '#size' => 2,
-      '#required' => TRUE,
     ];
 
     $form['validation_skip'] = [
@@ -365,8 +368,7 @@ class SettingsForm extends ConfigFormBase {
         '#title' => t('Send plugins'),
         '#options' => $send_form_array,
         '#default_value' => ($config->get('send_plugins')) ? $config->get('send_plugins') : array(),
-        // TODO - Fill in description.
-        '#description' => t('Not sure what this is'),
+        '#description' => t('TFA Send Plugins, like TFA Twilio'),
       );
     }
 

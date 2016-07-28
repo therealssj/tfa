@@ -22,7 +22,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   description = @Translation("TFA Hotp Validation Plugin"),
  *   fallbacks = {
  *    "tfa_recovery_code"
- *   }
+ *   },
+ *   isFallback = FALSE
  * )
  */
 class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
@@ -219,13 +220,6 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
   }
 
   /**
-   * {@inheritdoc}
-   */
-  public function getFallbacks() {
-    return ($this->pluginDefinition['fallbacks']) ?: '';
-  }
-
-  /**
    * Get the HOTP counter.
    *
    * @return int
@@ -243,6 +237,20 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
   public function purge() {
     $this->deleteSeed();
     $this->deleteUserData('tfa', 'tfa_hotp_counter', $this->uid, $this->userData);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getFallbacks() {
+    return ($this->pluginDefinition['fallbacks']) ?: '';
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function isFallback(){
+    return ($this->pluginDefinition['isFallback']) ?: FALSE;
   }
 
 }
