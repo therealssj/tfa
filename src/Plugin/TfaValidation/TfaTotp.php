@@ -25,7 +25,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   description = @Translation("TFA Totp Validation Plugin"),
  *   fallbacks = {
  *    "tfa_recovery_code"
- *   }
+ *   },
+ *   isFallback = FALSE
  * )
  */
 class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
@@ -226,13 +227,6 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
   /**
    * {@inheritdoc}
    */
-  public function getFallbacks() {
-    return ($this->pluginDefinition['fallbacks']) ?: '';
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function getOverview($params) {
     $output = array(
       'heading' => array(
@@ -267,6 +261,20 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
    */
   public function purge() {
     $this->deleteSeed();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getFallbacks() {
+    return ($this->pluginDefinition['fallbacks']) ?: '';
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function isFallback() {
+    return ($this->pluginDefinition['isFallback']) ?: FALSE;
   }
 
 }

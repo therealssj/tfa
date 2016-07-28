@@ -18,7 +18,8 @@ use Drupal\user\UserDataInterface;
  * @TfaLogin(
  *   id = "tfa_trusted_browser",
  *   label = @Translation("TFA Trusted Browser"),
- *   description = @Translation("TFA Trusted Browser Plugin")
+ *   description = @Translation("TFA Trusted Browser Plugin"),
+ *   isFallback = TRUE
  * )
  */
 class TfaTrustedBrowser extends TfaBasePlugin implements TfaLoginInterface, TfaValidationInterface {
@@ -62,8 +63,8 @@ class TfaTrustedBrowser extends TfaBasePlugin implements TfaLoginInterface, TfaV
    *   If login cookie is set TRUE otherwise FALSE.
    */
   public function loginAllowed() {
-    if (isset($_COOKIE[$this->cookieName]) && ($did = $this->trustedBrowser($_COOKIE[$this->cookieName])) !== FALSE) {
-      $this->setUsed($did);
+    if (isset($_COOKIE[$this->cookieName]) && $this->trustedBrowser($_COOKIE[$this->cookieName]) !== FALSE) {
+      $this->setUsed($_COOKIE[$this->cookieName]);
       return TRUE;
     }
     return FALSE;
@@ -132,16 +133,17 @@ class TfaTrustedBrowser extends TfaBasePlugin implements TfaLoginInterface, TfaV
   protected function setTrusted($id, $name = '') {
     // Currently broken.
     // Store id for account.
-    //$records = $this->getUserData('tfa', 'tfa_trusted_browser', $this->configuration['uid'], $this->userData) ?: [];
-    //$records[$id] = serialize([
-    //  'created' => REQUEST_TIME,
-    //  'ip' => \Drupal::request()->getClientIp(),
-    //  'name' => $name,
-    //]);
-    //
-    //$data = [
-    //  'tfa_trusted_browser' => $records,
-    //];
+    $records = $this->getUserData('tfa', 'tfa_trusted_browser', $this->configuration['uid'], $this->userData) ?: [];
+
+    $records[$id] = [
+      'created' => REQUEST_TIME,
+      'ip' => \Drupal::request()->getClientIp(),
+      'name' => $name,
+    ];
+
+    $data = [
+      'tfa_trusted_browser' => $records,
+    ];
 
     $this->setUserData('tfa', $data, $this->configuration['uid'], $this->userData);
     // Issue cookie with ID.
@@ -163,7 +165,10 @@ class TfaTrustedBrowser extends TfaBasePlugin implements TfaLoginInterface, TfaV
   protected function setUsed($id) {
     $result = $this->getUserData('tfa', 'tfa_trusted_browser', $this->uid, $this->userData);
     $result[$id]['last_used'] = REQUEST_TIME;
-    $this->setUserData('tfa', $result, $this->uid, $this->userData);
+    $data = [
+      'tfa_trusted_browser' => $result,
+    ];
+    $this->setUserData('tfa', $data, $this->uid, $this->userData);
   }
 
   /**
@@ -266,6 +271,13 @@ class TfaTrustedBrowser extends TfaBasePlugin implements TfaLoginInterface, TfaV
    */
   public function purge() {
     $this->deleteTrusted();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function isFallback() {
+    return ($this->pluginDefinition['isFallback']) ?: FALSE;
   }
 
 }
