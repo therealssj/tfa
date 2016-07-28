@@ -223,7 +223,7 @@ class TfaTrustedBrowserSetup extends TfaTrustedBrowser implements TfaSetupInterf
       '#theme' => 'links',
       '#links' => array(
         'admin' => array(
-          'title' => 'Set Trusted Browser',
+          'title' => 'Configure Trusted Browsers',
           'url' => Url::fromRoute('tfa.validation.setup', [
             'user' => $params['account']->id(),
             'method' => $params['plugin_id'],

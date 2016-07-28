@@ -100,6 +100,7 @@ class BasicOverview extends FormBase {
         '#type' => 'markup',
         '#markup' => '<p>' . $status_text . '</p>',
       );
+
     }
 
     if ($configuration['enabled']) {

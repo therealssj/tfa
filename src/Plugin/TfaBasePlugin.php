@@ -234,4 +234,8 @@ abstract class TfaBasePlugin extends PluginBase {
     return FALSE;
   }
 
+  public function getLabel(){
+    return ($this->pluginDefinition['label']) ?: '';
+  }
+
 }

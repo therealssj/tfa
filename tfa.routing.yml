@@ -62,3 +62,11 @@ tfa.disable:
   requirements:
     _permission: 'disable own tfa'
     user: \d+
+
+tfa.plugin.reset:
+  path: 'user/{user}/security/tfa/{method}/{reset}'
+  defaults:
+    _form: 'Drupal\tfa\Form\BasicSetup'
+    _title: 'TFA setup'
+  requirements:
+    _permission: 'setup own tfa'
