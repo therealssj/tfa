@@ -75,8 +75,8 @@ class TfaTrustedBrowser extends TfaBasePlugin implements TfaLoginInterface, TfaV
    */
   public function getForm(array $form, FormStateInterface $form_state) {
     $form['trust_browser'] = array(
-      '#type'        => 'checkbox',
-      '#title'       => t('Remember this browser?'),
+      '#type' => 'checkbox',
+      '#title' => t('Remember this browser?'),
       '#description' => t('Not recommended if you are on a public or shared computer.'),
     );
     return $form;
@@ -94,10 +94,7 @@ class TfaTrustedBrowser extends TfaBasePlugin implements TfaLoginInterface, TfaV
   public function submitForm(array $form, FormStateInterface &$form_state) {
     $trust_browser = $form_state->getValue('trust_browser');
     if (!empty($trust_browser)) {
-      $this->trustBrowser = TRUE;
-    }
-    else {
-      $this->trustBrowser = FALSE;
+      $this->setTrusted($this->generateBrowserId(), $this->getAgent());
     }
   }
 
