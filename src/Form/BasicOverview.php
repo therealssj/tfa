@@ -6,11 +6,7 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\tfa\TfaDataTrait;
-use Drupal\tfa\TfaLoginPluginManager;
-use Drupal\tfa\TfaSendPluginManager;
-use Drupal\tfa\TfaSetup;
 use Drupal\tfa\TfaSetupPluginManager;
-use Drupal\tfa\TfaValidationPluginManager;
 use Drupal\user\UserDataInterface;
 use Drupal\user\UserInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -69,10 +65,13 @@ class BasicOverview extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, UserInterface $user = NULL) {
-    $output['info'] = array(
+    $output['info'] = [
       '#type' => 'markup',
-      '#markup' => '<p>' . t('Two-factor authentication (TFA) provides additional security for your account. With TFA enabled, you log in to the site with a verification code in addition to your username and password.') . '</p>',
-    );
+      '#markup' => '<p>' . $this->t('Two-factor authentication (TFA) provides
+      additional security for your account. With TFA enabled, you log in to
+      the site with a verification code in addition to your username and
+      password.') . '</p>',
+    ];
     // $form_state['storage']['account'] = $user;.
     $configuration = $this->config('tfa.settings')->getRawData();
     $user_tfa = $this->tfaGetTfaData($user->id(), $this->userData);
@@ -82,25 +81,28 @@ class BasicOverview extends FormBase {
       $date_formatter = \Drupal::service('date.formatter');
       if ($enabled && !empty($user_tfa['data']['plugins'])) {
         if ($this->currentUser()->hasPermission('disable own tfa')) {
-          $status_text = t('Status: <strong>TFA enabled</strong>, set @time. <a href=":url">Disable TFA</a>', array(
+          $status_text = $this->t('Status: <strong>TFA enabled</strong>, set
+          @time. <a href=":url">Disable TFA</a>', [
             '@time' => $date_formatter->format($user_tfa['saved']),
             ':url' => URL::fromRoute('tfa.disable', ['user' => $user->id()])->toString(),
-          ));
+          ]);
         }
         else {
-          $status_text = t('Status: <strong>TFA enabled</strong>, set @time.', array(
+          $status_text = $this->t('Status: <strong>TFA enabled</strong>, set
+          @time.', [
             '@time' => $date_formatter->format($user_tfa['saved']),
-          ));
+          ]);
         }
       }
       else {
-        $status_text = t('Status: <strong>TFA disabled</strong>, set @time.', array('@time' => $date_formatter->format($user_tfa['saved'])));
+        $status_text = $this->t('Status: <strong>TFA disabled</strong>, set @time.', [
+          '@time' => $date_formatter->format($user_tfa['saved']),
+        ]);
       }
-      $output['status'] = array(
+      $output['status'] = [
         '#type' => 'markup',
         '#markup' => '<p>' . $status_text . '</p>',
-      );
-
+      ];
     }
 
     if ($configuration['enabled']) {
@@ -158,7 +160,7 @@ class BasicOverview extends FormBase {
   protected function tfaPluginSetupFormOverview($plugin, $account, array $user_tfa) {
     $enabled = isset($user_tfa['status']) && $user_tfa['status'] ? TRUE : FALSE;
 
-    $output = array();
+    $output = [];
     $params = [
       'enabled' => $enabled,
       'account' => $account,

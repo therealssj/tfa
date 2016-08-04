@@ -109,10 +109,10 @@ class EntryForm extends FormBase {
       }
     }
 
-    $form['account'] = array(
+    $form['account'] = [
       '#type' => 'value',
       '#value' => $user,
-    );
+    ];
 
     return $form;
 
@@ -164,21 +164,6 @@ class EntryForm extends FormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $user = $form_state->getValue('account');
-    // If validation failed or fallback was requested.
-    // if($form_state->hasAnyErrors()) {
-    // If fallback was triggered TFA process has been reset to new validate
-    // plugin so run begin and store new context.
-    //      $fallback = $form_state->getValue('fallback');
-    //      if (isset($fallback) && $form_state->getValue('op') === $fallback) {
-    //        $tfa->begin();
-    //      }
-    // $context = $tfa->getContext();
-    // $this->tfaManager->setContext($user, $context);
-    // $form_state['rebuild'] = TRUE;
-    // }
-    // else {
-    // TFA process is complete so finalize and authenticate user.
-    // $context = $this->tfaManager->getContext($user);
     // TODO This could be improved with EventDispatcher.
     if (!empty($this->tfaLoginPlugins)) {
       foreach ($this->tfaLoginPlugins as $plugin) {
@@ -194,10 +179,7 @@ class EntryForm extends FormBase {
     // TODO This could be improved with EventDispatcher.
     $this->finalize();
 
-    // Set redirect based on query parameters, existing $form_state or context.
-    // $form_state['redirect'] = _tfa_form_get_destination($context, $form_state, $user);.
     $form_state->setRedirect('<front>');
-    // }.
   }
 
   /**

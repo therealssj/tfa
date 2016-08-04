@@ -58,6 +58,14 @@ interface TfaSetupInterface {
   public function getHelpLinks();
 
   /**
+   * Returns a list of messages for plugin step.
+   *
+   * @return string[]
+   *   An array containing messages to be used during plugin setup.
+   */
+  public function getSetupMessages();
+
+  /**
    * Plugin overview page.
    *
    * @param array $params

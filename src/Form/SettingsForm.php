@@ -123,7 +123,7 @@ class SettingsForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config('tfa.settings');
-    $form = array();
+    $form = [];
 
     // Get Login Plugins.
     $login_plugins = $this->tfaLogin->getDefinitions();
@@ -163,111 +163,112 @@ class SettingsForm extends ConfigFormBase {
     }
 
     // Enable TFA checkbox.
-    $form['tfa_enabled'] = array(
+    $form['tfa_enabled'] = [
       '#type' => 'checkbox',
-      '#title' => t('Enable TFA'),
+      '#title' => $this->t('Enable TFA'),
       '#default_value' => $config->get('enabled') && !empty($encryption_profiles),
-      '#description' => t('Enable TFA for account authentication.'),
+      '#description' => $this->t('Enable TFA for account authentication.'),
       '#disabled' => empty($encryption_profiles),
-    );
+    ];
 
-    $enabled_state = array(
-      'visible' => array(
-        ':input[name="tfa_enabled"]' => array('checked' => TRUE),
-      ),
-    );
+    $enabled_state = [
+      'visible' => [
+        ':input[name="tfa_enabled"]' => ['checked' => TRUE],
+      ],
+    ];
 
     if (count($validate_plugins)) {
-      $form['tfa_validate'] = array(
+      $form['tfa_validate'] = [
         '#type' => 'select',
-        '#title' => t('Validation plugin'),
+        '#title' => $this->t('Validation plugin'),
         '#options' => $validate_plugins_labels,
         '#default_value' => $config->get('validate_plugin') ?: 'tfa_totp',
-        '#description' => t('Plugin that will be used as the default TFA process.'),
+        '#description' => $this->t('Plugin that will be used as the default TFA process.'),
         // Show only when TFA is enabled.
         '#states' => $enabled_state,
         '#required' => TRUE,
-      );
+      ];
     }
     else {
-      $form['no_validate'] = array(
+      $form['no_validate'] = [
         '#value' => 'markup',
-        '#markup' => t('No available validation plugins available. TFA process will not occur.'),
-      );
+        '#markup' => $this->t('No available validation plugins available. TFA
+        process will not occur.'),
+      ];
     }
 
     if (count($validate_plugins_fallbacks)) {
-      $form['tfa_fallback'] = array(
+      $form['tfa_fallback'] = [
         '#type' => 'fieldset',
-        '#title' => t('Validation fallback plugins'),
-        '#description' => t('Fallback plugins and order.'),
+        '#title' => $this->t('Validation fallback plugins'),
+        '#description' => $this->t('Fallback plugins and order.'),
         '#states' => $enabled_state,
         '#tree' => TRUE,
-      );
+      ];
 
       $enabled_fallback_plugins = $config->get('fallback_plugins');
       foreach ($validate_plugins_fallbacks as $plugin => $fallbacks) {
-        $fallback_state = array(
-          'visible' => array(
-            ':input[name="tfa_validate"]' => array('value' => $plugin),
-          ),
-        );
+        $fallback_state = [
+          'visible' => [
+            ':input[name="tfa_validate"]' => ['value' => $plugin],
+          ],
+        ];
         if (count($fallbacks)) {
           foreach ($fallbacks as $fallback) {
             $order = (@$enabled_fallback_plugins[$plugin][$fallback]['weight']) ?: -2;
             $fallback_value = (@$enabled_fallback_plugins[$plugin][$fallback]['enable']) ?: 1;
-            $form['tfa_fallback'][$plugin][$fallback] = array(
-              'enable' => array(
+            $form['tfa_fallback'][$plugin][$fallback] = [
+              'enable' => [
                 '#title' => $fallback_plugins_labels[$fallback],
                 '#type' => 'checkbox',
                 '#default_value' => $fallback_value,
                 '#states' => $fallback_state,
-              ),
-              'weight' => array(
+              ],
+              'weight' => [
                 '#type' => 'weight',
-                '#title' => t('Order'),
+                '#title' => $this->t('Order'),
                 '#delta' => 2,
                 '#default_value' => $order,
                 '#title_display' => 'invisible',
                 '#states' => $fallback_state,
-              ),
-            );
+              ],
+            ];
           }
         }
         else {
-          $form['tfa_fallback'][$plugin] = array(
+          $form['tfa_fallback'][$plugin] = [
             '#type' => 'item',
-            '#description' => t('No fallback plugins available.'),
+            '#description' => $this->t('No fallback plugins available.'),
             '#states' => $fallback_state,
-          );
+          ];
         }
       }
     }
 
     $totp_enabled_state = [
       'visible' => [
-        ':input[name="tfa_enabled"]' => array('checked' => TRUE),
+        ':input[name="tfa_enabled"]' => ['checked' => TRUE],
         'select[name="tfa_validate"]' => ['value' => 'tfa_totp'],
       ],
     ];
 
     $hotp_enabled_state = [
       'visible' => [
-        ':input[name="tfa_enabled"]' => array('checked' => TRUE),
+        ':input[name="tfa_enabled"]' => ['checked' => TRUE],
         'select[name="tfa_validate"]' => ['value' => 'tfa_hotp'],
       ],
     ];
 
     $form['extra_settings']['tfa_totp'] = [
       '#type' => 'fieldset',
-      '#title' => t('Extra Settings'),
-      '#descrption' => t('Extra plugin settings.'),
+      '#title' => $this->t('Extra Settings'),
+      '#descrption' => $this->t('Extra plugin settings.'),
       '#states' => $totp_enabled_state,
     ];
 
     $form['extra_settings']['tfa_totp']['time_skew'] = [
       '#type' => 'textfield',
-      '#title' => t('Time Skew'),
+      '#title' => $this->t('Time Skew'),
       '#default_value' => ($config->get('time_skew')) ?: 30,
       '#description' => 'Number of 30 second chunks to allow TOTP keys between.',
       '#size' => 2,
@@ -276,14 +277,14 @@ class SettingsForm extends ConfigFormBase {
 
     $form['extra_settings']['tfa_hotp'] = [
       '#type' => 'fieldset',
-      '#title' => t('Extra Settings'),
-      '#descrption' => t('Extra plugin settings.'),
+      '#title' => $this->t('Extra Settings'),
+      '#descrption' => $this->t('Extra plugin settings.'),
       '#states' => $hotp_enabled_state,
     ];
 
     $form['extra_settings']['tfa_hotp']['counter_window'] = [
       '#type' => 'textfield',
-      '#title' => t('Counter Window'),
+      '#title' => $this->t('Counter Window'),
       '#default_value' => ($config->get('counter_window')) ?: 5,
       '#description' => 'How far ahead from current counter should we check the code.',
       '#size' => 2,
@@ -297,7 +298,7 @@ class SettingsForm extends ConfigFormBase {
     }
     $form['encryption_profile'] = [
       '#type' => 'select',
-      '#title' => t('Encryption Profile'),
+      '#title' => $this->t('Encryption Profile'),
       '#options' => $encryption_profile_labels,
       '#description' => 'Encryption profiles to encrypt the secret',
       '#default_value' => $config->get('encryption'),
@@ -307,7 +308,7 @@ class SettingsForm extends ConfigFormBase {
 
     $form['recovery_codes_amount'] = [
       '#type' => 'textfield',
-      '#title' => t('Recovery Codes Amount'),
+      '#title' => $this->t('Recovery Codes Amount'),
       '#default_value' => ($config->get('recovery_codes_amount')) ?: 10,
       '#description' => 'Number of Recovery Codes To Generate.',
       '#states' => $enabled_state,
@@ -316,7 +317,7 @@ class SettingsForm extends ConfigFormBase {
 
     $form['validation_skip'] = [
       '#type' => 'textfield',
-      '#title' => t('Skip Validation'),
+      '#title' => $this->t('Skip Validation'),
       '#default_value' => ($config->get('validation_skip')) ?: 2,
       '#description' => 'No. of times a user without having setup tfa validation can login.',
       '#size' => 2,
@@ -326,7 +327,7 @@ class SettingsForm extends ConfigFormBase {
 
     $form['name_prefix'] = [
       '#type' => 'textfield',
-      '#title' => t('OTP QR Code Prefix'),
+      '#title' => $this->t('OTP QR Code Prefix'),
       '#default_value' => ($config->get('name_prefix')) ?: 'tfa',
       '#description' => 'Prefix for OTP QR code names. Suffix is account username.',
       '#size' => 15,
@@ -336,7 +337,7 @@ class SettingsForm extends ConfigFormBase {
 
     // Enable login plugins.
     if (count($login_plugins)) {
-      $login_form_array = array();
+      $login_form_array = [];
 
       foreach ($login_plugins as $login_plugin) {
         $id = $login_plugin['id'];
@@ -344,18 +345,20 @@ class SettingsForm extends ConfigFormBase {
         $login_form_array[$id] = (string) $title;
       }
 
-      $form['tfa_login'] = array(
+      $form['tfa_login'] = [
         '#type' => 'checkboxes',
-        '#title' => t('Login plugins'),
+        '#title' => $this->t('Login plugins'),
         '#options' => $login_form_array,
-        '#default_value' => ($config->get('login_plugins')) ? $config->get('login_plugins') : array(),
-        '#description' => t('Plugins that can allow a user to skip the TFA process. If any plugin returns true the user will not be required to follow TFA. <strong>Use with caution.</strong>'),
-      );
+        '#default_value' => ($config->get('login_plugins')) ? $config->get('login_plugins') : [],
+        '#description' => $this->t('Plugins that can allow a user to skip the
+        TFA process. If any plugin returns true the user will not be required
+        to follow TFA. <strong>Use with caution.</strong>'),
+      ];
     }
 
     // Enable send plugins.
     if (count($send_plugins)) {
-      $send_form_array = array();
+      $send_form_array = [];
 
       foreach ($send_plugins as $send_plugin) {
         $id = $send_plugin['id'];
@@ -363,18 +366,18 @@ class SettingsForm extends ConfigFormBase {
         $send_form_array[$id] = (string) $title;
       }
 
-      $form['tfa_send'] = array(
+      $form['tfa_send'] = [
         '#type' => 'checkboxes',
-        '#title' => t('Send plugins'),
+        '#title' => $this->t('Send plugins'),
         '#options' => $send_form_array,
-        '#default_value' => ($config->get('send_plugins')) ? $config->get('send_plugins') : array(),
-        '#description' => t('TFA Send Plugins, like TFA Twilio'),
-      );
+        '#default_value' => ($config->get('send_plugins')) ? $config->get('send_plugins') : [],
+        '#description' => $this->t('TFA Send Plugins, like TFA Twilio'),
+      ];
     }
 
     // Enable setup plugins.
     if (count($setup_plugins) >= 1) {
-      $setup_form_array = array();
+      $setup_form_array = [];
 
       foreach ($setup_plugins as $setup_plugin) {
         $id = $setup_plugin['id'];
@@ -382,31 +385,31 @@ class SettingsForm extends ConfigFormBase {
         $setup_form_array[$id] = $title;
       }
 
-      $form['tfa_setup'] = array(
+      $form['tfa_setup'] = [
         '#type' => 'checkboxes',
-        '#title' => t('Setup plugins'),
+        '#title' => $this->t('Setup plugins'),
         '#options' => $setup_form_array,
-        '#default_value' => ($config->get('setup_plugins')) ? $config->get('setup_plugins') : array(),
-        '#description' => t('Not sure what this is'),
-      );
+        '#default_value' => ($config->get('setup_plugins')) ? $config->get('setup_plugins') : [],
+        '#description' => $this->t('Not sure what this is'),
+      ];
 
     }
 
     $form['actions']['#type'] = 'actions';
-    $form['actions']['submit'] = array(
+    $form['actions']['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Save configuration'),
       '#button_type' => 'primary',
-    );
+    ];
 
     // By default, render the form using theme_system_config_form().
     $form['#theme'] = 'system_config_form';
 
-    $form['actions']['reset'] = array(
+    $form['actions']['reset'] = [
       '#type' => 'submit',
       '#value' => $this->t('Reset'),
-      '#submit' => array('::resetForm'),
-    );
+      '#submit' => ['::resetForm'],
+    ];
 
     return $form;
   }
@@ -473,7 +476,7 @@ class SettingsForm extends ConfigFormBase {
    */
   protected function dataEmptyCheck($data, $message) {
     if (empty($data)) {
-      drupal_set_message(t($message), 'error');
+      drupal_set_message($this->t($message), 'error');
       return TRUE;
     }
 
@@ -481,7 +484,12 @@ class SettingsForm extends ConfigFormBase {
   }
 
   /**
-   * Resets the filter selections.
+   * Resets TFA settings.
+   *
+   * @param array $form
+   *   An associative array containing the structure of the form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
    */
   public function resetForm(array &$form, FormStateInterface $form_state) {
     $form_state->setRedirect('tfa.settings.reset');

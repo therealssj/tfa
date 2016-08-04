@@ -9,7 +9,7 @@ use Drupal\tfa\Plugin\TfaSetupInterface;
  * Class TfaSetup.
  */
 class TfaSetup {
-
+  // @todo This class is somewhat useless. Deprecate this later.
   /**
    * Current setup plugin.
    *
@@ -90,6 +90,16 @@ class TfaSetup {
    */
   public function submitForm(array $form, FormStateInterface &$form_state) {
     return $this->setupPlugin->submitSetupForm($form, $form_state);
+  }
+
+  /**
+   * Returns a list of messages for plugin step.
+   *
+   * @return string[]
+   *   An array containing messages to be used during plugin setup.
+   */
+  public function getSetupMessages() {
+    return $this->setupPlugin->getSetupMessages();
   }
 
 }

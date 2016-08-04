@@ -5,7 +5,6 @@ namespace Drupal\tfa\Plugin\TfaValidation;
 use Base32\Base32;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Url;
 use Drupal\encrypt\EncryptionProfileManagerInterface;
 use Drupal\encrypt\EncryptServiceInterface;
 use Drupal\tfa\Plugin\TfaBasePlugin;
@@ -30,9 +29,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * )
  */
 class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
-  use DependencySerializationTrait;
-  use TfaDataTrait;
-
   /**
    * Object containing the external validation library.
    *
@@ -59,9 +55,9 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
    */
   public function __construct(array $configuration, $plugin_id, $plugin_definition, UserDataInterface $user_data, EncryptionProfileManagerInterface $encryption_profile_manager, EncryptServiceInterface $encrypt_service) {
     parent::__construct($configuration, $plugin_id, $plugin_definition, $user_data, $encryption_profile_manager, $encrypt_service);
-    $this->auth      = new \StdClass();
+    $this->auth = new \StdClass();
     $this->auth->otp = new Otp();
-    $this->auth->ga  = new GoogleAuthenticator();
+    $this->auth->ga = new GoogleAuthenticator();
     // Allow codes within tolerance range of 3 * 30 second units.
     $this->timeSkew = \Drupal::config('tfa.settings')->get('time_skew');
     $this->alreadyAccepted = FALSE;
@@ -96,19 +92,19 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
     if ($this->getUserData('tfa', 'tfa_recovery_code', $this->uid, $this->userData) && $this->getFallbacks()) {
       $message .= '<br/>Can not access your account? Use one of your recovery codes.';
     }
-    $form['code']             = array(
-      '#type'        => 'textfield',
-      '#title'       => t('Application verification code'),
-      '#description' => t($message, array('@length' => $this->codeLength)),
-      '#required'    => TRUE,
-      '#attributes'  => array('autocomplete' => 'off'),
-    );
+    $form['code'] = [
+      '#type' => 'textfield',
+      '#title' => t('Application verification code'),
+      '#description' => t($message, ['@length' => $this->codeLength]),
+      '#required'  => TRUE,
+      '#attributes' => ['autocomplete' => 'off'],
+    ];
 
     $form['actions']['#type'] = 'actions';
-    $form['actions']['login'] = array(
+    $form['actions']['login'] = [
       '#type'  => 'submit',
       '#value' => t('Verify'),
-    );
+    ];
 
     return $form;
   }
@@ -147,7 +143,6 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
       $this->storeAcceptedCode($code);
       return TRUE;
     }
-
     return FALSE;
   }
 
@@ -162,7 +157,7 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
     }
     else {
       // Get OTP seed.
-      $seed          = $this->getSeed();
+      $seed = $this->getSeed();
       $this->isValid = ($seed && $this->auth->otp->checkTotp(Base32::decode($seed), $code, $this->timeSkew));
     }
     return $this->isValid;
@@ -189,7 +184,7 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
     $result = $this->getUserData('tfa', 'tfa_totp_seed', $this->uid, $this->userData);
     if (!empty($result)) {
       $encrypted = base64_decode($result['seed']);
-      $seed      = $this->decrypt($encrypted);
+      $seed = $this->decrypt($encrypted);
       if (!empty($seed)) {
         return $seed;
       }

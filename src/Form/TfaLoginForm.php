@@ -7,6 +7,7 @@ use Drupal\Core\Flood\FloodInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\tfa\Plugin\TfaSendInterface;
 use Drupal\tfa\Plugin\TfaValidationInterface;
 use Drupal\tfa\TfaDataTrait;
 use Drupal\tfa\TfaLoginPluginManager;
@@ -132,7 +133,7 @@ class TfaLoginForm extends UserLoginForm {
     $this->tfaLoginPlugins = $this->tfaLoginManager->getPlugins(['uid' => $account->id()]);
 
     // Setup TFA.
-    if (isset($tfaValidationPlugin)) {
+    if (isset($tfaValidationPlugin) && $tfa_enabled) {
       if ($account->hasPermission('require tfa') && $this->ready($tfaValidationPlugin) && $tfa_enabled && $this->loginAllowed()) {
         user_login_finalize($account);
         drupal_set_message('You have logged in on a trusted browser.');
@@ -145,7 +146,12 @@ class TfaLoginForm extends UserLoginForm {
           $tfa_data['validation_skipped'] = $validation_skipped;
 
           $tfa_setup_link = '/user/' . $account->id() . '/security/tfa/tfa_totp';
-          drupal_set_message(t('You are required to setup two-factor authentication <a href="@link">here.</a> You have @skipped attempts left after this you will be unable to login.', ['@skipped' => $left, '@link' => $tfa_setup_link]), 'error');
+          drupal_set_message($this->t('You are required to setup two-factor
+          authentication <a href="@link">here.</a> You have @skipped attempts
+          left after this you will be unable to login.', [
+            '@skipped' => $left,
+            '@link' => $tfa_setup_link,
+          ]), 'error');
           $this->tfaSaveTfaData($account->id(), $this->userData, $tfa_data);
           user_login_finalize($account);
           $form_state->setRedirect('<front>');
@@ -166,7 +172,9 @@ class TfaLoginForm extends UserLoginForm {
         }
 
         // Begin TFA and set process context.
-        $this->begin($tfaValidationPlugin);
+        // @todo This is used in send plugins which has not been implemented
+        // yet.
+        //$this->begin($tfaValidationPlugin);
         // $context = $tfa->getContext();
         // $this->tfaManager->setContext($account, $context);.
         $login_hash = $this->getLoginHash($account);
@@ -176,19 +184,17 @@ class TfaLoginForm extends UserLoginForm {
             'user' => $account->id(),
             'hash' => $login_hash,
           ]
-
         );
       }
       else {
-        drupal_set_message(t('Two-factor authentication is enabled but misconfigured. Please contact a site administrator.'), 'error');
+        drupal_set_message($this->t('Two-factor authentication is enabled but
+        misconfigured. Please contact a site administrator.'), 'error');
         $form_state->setRedirect('user.page');
       }
     }
     else {
-      drupal_set_message(t('Two-factor authentication is enabled but misconfigured. Please contact a site administrator.'), 'error');
-      $form_state->setRedirect('user.page');
+      return parent::submitForm($form, $form_state);
     }
-
 
   }
 
@@ -243,11 +249,14 @@ class TfaLoginForm extends UserLoginForm {
 
   /**
    * Begin the TFA process.
+   *
+   * @param \Drupal\tfa\Plugin\TfaSendInterface $tfaSendPlugin
+   *   The send plugin instance.
    */
-  protected function begin(TfaValidationInterface $tfaValidationPlugin) {
+  protected function begin(TfaSendInterface $tfaSendPlugin) {
     // Invoke begin method on send validation plugins.
-    if (method_exists($tfaValidationPlugin, 'begin')) {
-      $tfaValidationPlugin->begin();
+    if (method_exists($tfaSendPlugin, 'begin')) {
+      $tfaSendPlugin->begin();
     }
   }
 
@@ -265,11 +274,11 @@ class TfaLoginForm extends UserLoginForm {
   protected function getLoginHash($account) {
     // Using account login will mean this hash will become invalid once user has
     // authenticated via TFA.
-    $data = implode(':', array(
+    $data = implode(':', [
       $account->getUsername(),
       $account->getPassword(),
       $account->getLastLoginTime(),
-    ));
+    ]);
     return Crypt::hashBase64($data);
   }
 

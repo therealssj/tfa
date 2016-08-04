@@ -58,7 +58,6 @@ default.fallback.config:
   type: mapping
   label: 'Default Fallback plugin config.'
   mapping:
-
     enable:
       type: integer
       label: 'Plugin state'

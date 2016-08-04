@@ -49,11 +49,11 @@ class TfaTrustedBrowser extends TfaBasePlugin implements TfaLoginInterface, TfaV
    */
   public function __construct(array $configuration, $plugin_id, $plugin_definition, UserDataInterface $user_data, EncryptionProfileManagerInterface $encryption_profile_manager, EncryptServiceInterface $encrypt_service) {
     parent::__construct($configuration, $plugin_id, $plugin_definition, $user_data, $encryption_profile_manager, $encrypt_service);
-    $config           = \Drupal::config('tfa.settings');
+    $config = \Drupal::config('tfa.settings');
     $this->cookieName = $config->get('cookie_name') ?: 'TFA';
     // Expiration defaults to 30 days.
-    $this->expiration = $config->get('trust_cookie_expiration') ?: 3600 * 24 * 30;
-    $this->userData   = $user_data;
+    $this->expiration = $config->get('trust_cookie_expiration') ?: 86400 * 30;
+    $this->userData = $user_data;
   }
 
   /**
@@ -74,11 +74,11 @@ class TfaTrustedBrowser extends TfaBasePlugin implements TfaLoginInterface, TfaV
    * {@inheritdoc}
    */
   public function getForm(array $form, FormStateInterface $form_state) {
-    $form['trust_browser'] = array(
+    $form['trust_browser'] = [
       '#type' => 'checkbox',
       '#title' => t('Remember this browser?'),
       '#description' => t('Not recommended if you are on a public or shared computer.'),
-    );
+    ];
     return $form;
   }
 
@@ -116,7 +116,7 @@ class TfaTrustedBrowser extends TfaBasePlugin implements TfaLoginInterface, TfaV
    */
   protected function generateBrowserId() {
     $id = base64_encode(Crypt::randomBytes(32));
-    return strtr($id, array('+' => '-', '/' => '_', '=' => ''));
+    return strtr($id, ['+' => '-', '/' => '_', '=' => '']);
   }
 
   /**
@@ -146,11 +146,11 @@ class TfaTrustedBrowser extends TfaBasePlugin implements TfaLoginInterface, TfaV
     // Issue cookie with ID.
     $cookie_secure = ini_get('session.cookie_secure');
     $expiration    = REQUEST_TIME + $this->expiration;
-    $domain = FALSE;
+    $domain = strpos($_SERVER['HTTP_HOST'], 'localhost') === FALSE ? $_SERVER['HTTP_HOST'] : FALSE;
     setcookie($this->cookieName, $id, $expiration, '/', $domain, (empty($cookie_secure) ? FALSE : TRUE), TRUE);
     $name = empty($name) ? $this->getAgent() : $name;
     // TODO - use services defined in module instead this procedural way.
-    \Drupal::logger('tfa')->info('Set trusted browser for user UID !uid, browser @name', array('@name' => $name, '!uid' => $this->uid));
+    \Drupal::logger('tfa')->info('Set trusted browser for user UID !uid, browser @name', ['@name' => $name, '!uid' => $this->uid]);
   }
 
   /**

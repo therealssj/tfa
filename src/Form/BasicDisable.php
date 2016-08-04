@@ -75,47 +75,53 @@ class BasicDisable extends FormBase {
 
     // @todo Check require permissions and give warning about being locked out.
     if ($account->id() != $user->id() && $account->hasPermission('administer users')) {
-      $preamble_desc = t('Are you sure you want to disable TFA on account %name?', array('%name' => $user->getUsername()));
-      $notice_desc = t('TFA settings and data will be lost. %name can re-enable TFA again from their profile.', array('%name' => $user->getUsername()));
+      $preamble_desc = $this->t('Are you sure you want to disable TFA on account
+      %name?', ['%name' => $user->getUsername()]);
+
+      $notice_desc = $this->t('TFA settings and data will be lost. %name can
+      re-enable TFA again from their profile.', ['%name' => $user->getUsername()]);
     }
     else {
-      $preamble_desc = t('Are you sure you want to disable your two-factor authentication setup?');
-      $notice_desc = t("Your settings and data will be lost. You can re-enable two-factor authentication again from your profile.");
+      $preamble_desc = $this->t('Are you sure you want to disable your
+      two-factor authentication setup?');
+
+      $notice_desc = $this->t("Your settings and data will be lost. You can
+      re-enable two-factor authentication again from your profile.");
     }
-    $form['preamble'] = array(
+    $form['preamble'] = [
       '#prefix' => '<p class="preamble">',
       '#suffix' => '</p>',
       '#markup' => $preamble_desc,
-    );
-    $form['notice'] = array(
+    ];
+    $form['notice'] = [
       '#prefix' => '<p class="preamble">',
       '#suffix' => '</p>',
       '#markup' => $notice_desc,
-    );
+    ];
 
-    $form['account']['current_pass'] = array(
+    $form['account']['current_pass'] = [
       '#type' => 'password',
-      '#title' => t('Confirm your current password'),
+      '#title' => $this->t('Confirm your current password'),
       '#description_display' => 'before',
       '#size' => 25,
       '#weight' => -5,
-      '#attributes' => array('autocomplete' => 'off'),
+      '#attributes' => ['autocomplete' => 'off'],
       '#required' => TRUE,
-    );
-    $form['account']['mail'] = array(
+    ];
+    $form['account']['mail'] = [
       '#type' => 'value',
       '#value' => $user->getEmail(),
-    );
-    $form['actions']['submit'] = array(
+    ];
+    $form['actions']['submit'] = [
       '#type' => 'submit',
-      '#value' => t('Disable'),
-    );
-    $form['actions']['cancel'] = array(
+      '#value' => $this->t('Disable'),
+    ];
+    $form['actions']['cancel'] = [
       '#type' => 'submit',
-      '#value' => t('Cancel'),
-      '#limit_validation_errors' => array(),
-      '#submit' => array('::cancelForm'),
-    );
+      '#value' => $this->t('Cancel'),
+      '#limit_validation_errors' => [],
+      '#submit' => ['::cancelForm'],
+    ];
 
     $form_state->setStorage($storage);
 
@@ -136,7 +142,7 @@ class BasicDisable extends FormBase {
     // Check password.
     $current_pass = \Drupal::service('password')->check(trim($form_state->getValue('current_pass')), $account->getPassword());
     if (!$current_pass) {
-      $form_state->setErrorByName('current_pass', t("Incorrect password."));
+      $form_state->setErrorByName('current_pass', $this->t("Incorrect password."));
     }
   }
 
@@ -149,11 +155,11 @@ class BasicDisable extends FormBase {
     $values = $form_state->getValues();
     $account = $storage['account'];
     if ($values['op'] === $values['cancel']) {
-      drupal_set_message(t('TFA disable canceled.'));
+      drupal_set_message($this->t('TFA disable canceled.'));
       $form_state->setRedirect('tfa.overview', ['user' => $account->id()]);
       return;
     }
-    $this->tfaSaveTfaData($account->id(), $this->userData, array('status' => FALSE));
+    $this->tfaSaveTfaData($account->id(), $this->userData, ['status' => FALSE]);
 
     // Delete OTP Seed.
     $validate_plugin = $this->config('tfa.settings')->get('validate_plugin');
@@ -167,17 +173,17 @@ class BasicDisable extends FormBase {
       $fallback_plugin->purge();
     }
 
-    \Drupal::logger('tfa')->notice('TFA disabled for user @name UID @uid', array(
+    \Drupal::logger('tfa')->notice('TFA disabled for user @name UID @uid', [
       '@name' => $account->getUsername(),
       '@uid' => $account->id(),
-    ));
+    ]);
 
     // @todo Not working, not sure why though.
     // E-mail account to inform user that it has been disabled.
-    $params = array('account' => $account);
+    $params = ['account' => $account];
     \Drupal::service('plugin.manager.mail')->mail('tfa_basic', 'tfa_basic_disabled_configuration', $account->getEmail(), $account->getPreferredLangcode(), $params);
 
-    drupal_set_message(t('TFA has been disabled.'));
+    drupal_set_message($this->t('TFA has been disabled.'));
     $form_state->setRedirect('tfa.overview', ['user' => $account->id()]);
   }
 

@@ -144,15 +144,15 @@ trait TfaDataTrait {
     $result = $this->getUserData('tfa', 'tfa_user_settings', $uid, $user_data);
     if (!empty($result)) {
       $data = $result['data'];
-      $tfa = array(
+      $tfa = [
         'status' => $result['status'] == '1' ? TRUE : FALSE,
         'saved' => $result['saved'],
         'data' => $data,
         'validation_skipped' => $result['validation_skipped'],
-      );
+      ];
       return $tfa;
     }
-    return array();
+    return [];
   }
 
 }

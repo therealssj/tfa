@@ -7,7 +7,7 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Plugin\DefaultPluginManager;
 
 /**
- *
+ * The send plugin manager.
  */
 class TfaSendPluginManager extends DefaultPluginManager {
 

@@ -43,4 +43,11 @@ class TfaSetup extends Plugin {
    */
   public $helpLinks;
 
+  /**
+   * The messages to be displayed during setup steps.
+   *
+   * @var string[]
+   */
+  public $setupMessages;
+
 }

@@ -85,7 +85,7 @@ class TfaValidationPluginManager extends DefaultPluginManager {
    * @return object
    *    Required validation plugin instance
    */
-  public function createInstance($plugin_id, array $configuration = array()) {
+  public function createInstance($plugin_id, array $configuration = []) {
     $plugin_definition = $this->getDefinition($plugin_id);
     $plugin_class = DefaultFactory::getPluginClass($plugin_id, $plugin_definition);
 
