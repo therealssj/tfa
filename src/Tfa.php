@@ -11,7 +11,8 @@ use Drupal\Core\Form\FormStateInterface;
  * Defines a TFA object.
  */
 class Tfa {
-
+  // @todo This class has been deprecated. Left here for future reference.
+  // Remove it later.
   /**
    * @var array
    */

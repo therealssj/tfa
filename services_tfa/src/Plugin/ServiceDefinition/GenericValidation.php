@@ -54,10 +54,15 @@ class GenericValidation extends ServiceDefinitionBase implements ContainerFactor
    * TOTPLogin constructor.
    *
    * @param array $configuration
+   *   The configuration array.
    * @param string $plugin_id
+   *   The plugin id.
    * @param mixed $plugin_definition
+   *   The plugin definition.
    * @param \Drupal\user\UserDataInterface $user_data
+   *   User data service.
    * @param \Drupal\tfa\TfaValidationPluginManager $tfa_validation_manager
+   *   Validation plugin manager.
    */
   public function __construct($configuration, $plugin_id, $plugin_definition, UserDataInterface $user_data, TfaValidationPluginManager $tfa_validation_manager) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);

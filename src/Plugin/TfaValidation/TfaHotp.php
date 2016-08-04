@@ -90,18 +90,18 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
     if ($this->getUserData('tfa', 'tfa_recovery_code', $this->uid, $this->userData) && $this->getFallbacks()) {
       $message .= '<br/>Can not access your account? Use one of your recovery codes.';
     }
-    $form['code']             = array(
-      '#type'        => 'textfield',
-      '#title'       => t('Application verification code'),
-      '#description' => t($message, array('@length' => $this->codeLength)),
-      '#required'    => TRUE,
-      '#attributes'  => array('autocomplete' => 'off'),
-    );
+    $form['code'] = [
+      '#type' => 'textfield',
+      '#title' => t('Application verification code'),
+      '#description' => t($message, ['@length' => $this->codeLength]),
+      '#required'  => TRUE,
+      '#attributes' => ['autocomplete' => 'off'],
+    ];
     $form['actions']['#type'] = 'actions';
-    $form['actions']['login'] = array(
+    $form['actions']['login'] = [
       '#type'  => 'submit',
       '#value' => t('Verify'),
-    );
+    ];
     return $form;
   }
 
@@ -155,8 +155,8 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
     }
     else {
       // Get OTP seed.
-      $seed          = $this->getSeed();
-      $counter       = $this->getHotpCounter();
+      $seed = $this->getSeed();
+      $counter = $this->getHotpCounter();
       $this->isValid = ($seed && ($counter = $this->auth->otp->checkHotpResync(Base32::decode($seed), $counter, $code)));
       $this->setUserData('tfa', ['tfa_hotp_counter' => ++$counter], $this->uid, $this->userData);
     }
@@ -249,7 +249,7 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
   /**
    * {@inheritdoc}
    */
-  public function isFallback(){
+  public function isFallback() {
     return ($this->pluginDefinition['isFallback']) ?: FALSE;
   }
 

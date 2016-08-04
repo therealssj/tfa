@@ -23,7 +23,7 @@ class McryptAES128Encryption extends EncryptionMethodBase implements EncryptionM
   /**
    * @return mixed
    */
-  public function encrypt($text, $key, $options = array()) {
+  public function encrypt($text, $key, $options = []) {
     $processed_text = '';
 
     // Key cannot be too long for this encryption.
@@ -47,7 +47,7 @@ class McryptAES128Encryption extends EncryptionMethodBase implements EncryptionM
   /**
    * @return mixed
    */
-  public function decrypt($text, $key, $options = array()) {
+  public function decrypt($text, $key, $options = []) {
     $processed_text = '';
 
     // Key cannot be too long for this encryption.
@@ -79,7 +79,7 @@ class McryptAES128Encryption extends EncryptionMethodBase implements EncryptionM
    *   An array of error messages, providing info on missing dependencies.
    */
   public function checkDependencies($text = NULL, $key = NULL) {
-    $errors = array();
+    $errors = [];
 
     if (!function_exists('mcrypt_encrypt')) {
       $errors[] = t('MCrypt library not installed.');

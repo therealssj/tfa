@@ -234,7 +234,13 @@ abstract class TfaBasePlugin extends PluginBase {
     return FALSE;
   }
 
-  public function getLabel(){
+  /**
+   * Get the plugin label.
+   *
+   * @return string
+   *   The plugin label.
+   */
+  public function getLabel() {
     return ($this->pluginDefinition['label']) ?: '';
   }
 

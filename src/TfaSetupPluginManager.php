@@ -73,7 +73,7 @@ class TfaSetupPluginManager extends DefaultPluginManager {
    * @return object
    *    Require setup plugin instance
    */
-  public function createInstance($plugin_id, array $configuration = array()) {
+  public function createInstance($plugin_id, array $configuration = []) {
     $plugin_definition = $this->getDefinition($plugin_id);
     $plugin_class = DefaultFactory::getPluginClass($plugin_id, $plugin_definition);
     // If the plugin provides a factory method, pass the container to it.

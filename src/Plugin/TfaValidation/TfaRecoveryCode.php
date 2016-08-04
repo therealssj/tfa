@@ -2,13 +2,11 @@
 
 namespace Drupal\tfa\Plugin\TfaValidation;
 
-use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\encrypt\EncryptionProfileManagerInterface;
 use Drupal\encrypt\EncryptService;
 use Drupal\tfa\Plugin\TfaBasePlugin;
 use Drupal\tfa\Plugin\TfaValidationInterface;
-use Drupal\tfa\TfaDataTrait;
 use Drupal\user\UserDataInterface;
 use Otp\GoogleAuthenticator;
 use Otp\Otp;
@@ -25,9 +23,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * )
  */
 class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
-  use DependencySerializationTrait;
-  use TfaDataTrait;
-
   /**
    * Object containing the external validation library.
    *
@@ -71,18 +66,18 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
    * {@inheritdoc}
    */
   public function getForm(array $form, FormStateInterface $form_state) {
-    $form['recover'] = array(
+    $form['recover'] = [
       '#type' => 'textfield',
       '#title' => t('Enter one of your recovery codes'),
       '#required' => TRUE,
       '#description' => t('Recovery codes were generated when you first set up TFA. Format: XXX XX XXX'),
-      '#attributes' => array('autocomplete' => 'off'),
-    );
+      '#attributes' => ['autocomplete' => 'off'],
+    ];
     $form['actions']['#type'] = 'actions';
-    $form['actions']['login'] = array(
+    $form['actions']['login'] = [
       '#type' => 'submit',
       '#value' => t('Verify'),
-    );
+    ];
     return $form;
   }
 
@@ -119,12 +114,12 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
     // Mark code as used.
     if ($this->usedCode) {
       $num = db_update('tfa_recovery_code')
-        ->fields(array('used' => REQUEST_TIME))
+        ->fields(['used' => REQUEST_TIME])
         ->condition('id', $this->usedCode)
         ->condition('uid', $this->context['uid'])
         ->execute();
       if ($num) {
-        watchdog('tfa_basic', 'Used TFA recovery code !id by user !uid', array('!id' => $this->usedCode, '!uid' => $this->context['uid']), WATCHDOG_NOTICE);
+        watchdog('tfa_basic', 'Used TFA recovery code !id by user !uid', ['!id' => $this->usedCode, '!uid' => $this->context['uid']], WATCHDOG_NOTICE);
       }
     }
   }

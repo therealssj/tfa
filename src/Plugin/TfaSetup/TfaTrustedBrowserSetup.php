@@ -13,7 +13,11 @@ use Drupal\user\UserDataInterface;
  * @TfaSetup(
  *   id = "tfa_trusted_browser_setup",
  *   label = @Translation("TFA Trusted Browser Setup"),
- *   description = @Translation("TFA Trusted Browser Setup Plugin")
+ *   description = @Translation("TFA Trusted Browser Setup Plugin"),
+ *   setupMessages = {
+ *    "saved" = @Translation("Browser saved."),
+ *    "skipped" = @Translation("Browser not saved.")
+ *   }
  * )
  */
 class TfaTrustedBrowserSetup extends TfaTrustedBrowser implements TfaSetupInterface {
@@ -30,56 +34,62 @@ class TfaTrustedBrowserSetup extends TfaTrustedBrowser implements TfaSetupInterf
    */
   public function getSetupForm(array $form, FormStateInterface $form_state) {
     $existing = $this->getTrustedBrowsers();
-    $time = \Drupal::config('tfa.settings')->get('trust_cookie_expiration');
-    $form['info'] = array(
+    $time = $this->expiration / 86400;
+    $form['info'] = [
       '#type' => 'markup',
-      '#markup' => '<p>' . t("Trusted browsers are a method for simplifying login by avoiding verification code entry for a set amount of time, @time days from marking a browser as trusted. After !time days, to log in you'll need to enter a verification code with your username and password during which you can again mark the browser as trusted.", array('@time' => $time)) . '</p>',
-    );
+      '#markup' => '<p>' . t("Trusted browsers are a method for
+      simplifying login by avoiding verification code entry for a set amount of
+      time, @time days from marking a browser as trusted. After @time days, to
+      log in you'll need to enter a verification code with your username and
+      password during which you can again mark the browser as trusted.", ['@time' => $time]) . '</p>',
+    ];
     // Present option to trust this browser if its not currently trusted.
     if (isset($_COOKIE[$this->cookieName]) && $this->trustedBrowser($_COOKIE[$this->cookieName]) !== FALSE) {
       $current_trusted = $_COOKIE[$this->cookieName];
     }
     else {
       $current_trusted = FALSE;
-      $form['trust'] = array(
+      $form['trust'] = [
         '#type' => 'checkbox',
         '#title' => t('Trust this browser?'),
         '#default_value' => empty($existing) ? 1 : 0,
-      );
+      ];
       // Optional field to name this browser.
-      $form['name'] = array(
+      $form['name'] = [
         '#type' => 'textfield',
         '#title' => t('Name this browser'),
         '#maxlength' => 255,
-        '#description' => t('Optionally, name the browser on your browser (e.g. "home firefox" or "office desktop windows"). Your current browser user agent is %browser', array('%browser' => $_SERVER['HTTP_USER_AGENT'])),
+        '#description' => t('Optionally, name the browser on your browser (e.g.
+        "home firefox" or "office desktop windows"). Your current browser user
+        agent is %browser', ['%browser' => $_SERVER['HTTP_USER_AGENT']]),
         '#default_value' => $this->getAgent(),
-        '#states' => array(
-          'visible' => array(
-            ':input[name="trust"]' => array('checked' => TRUE),
-          ),
-        ),
-      );
+        '#states' => [
+          'visible' => [
+            ':input[name="trust"]' => ['checked' => TRUE],
+          ],
+        ],
+      ];
     }
     if (!empty($existing)) {
-      $form['existing'] = array(
+      $form['existing'] = [
         '#type' => 'fieldset',
         '#title' => t('Existing browsers'),
         '#description' => t('Leave checked to keep these browsers in your trusted log in list.'),
         '#tree' => TRUE,
-      );
+      ];
 
       foreach ($existing as $browser_id => $browser) {
         $date_formatter = \Drupal::service('date.formatter');
-        $vars = array(
+        $vars = [
           '!set' => $date_formatter->format($browser['created']),
-        );
+        ];
 
         if (isset($browser['last_used'])) {
           $vars['!time'] = $date_formatter->format($browser['last_used']);
         }
 
         if ($current_trusted == $browser_id) {
-          $name = '<strong>' . t('@name (current browser)', array('@name' => $browser['name'])) . '</strong>';
+          $name = '<strong>' . t('@name (current browser)', ['@name' => $browser['name']]) . '</strong>';
         }
         else {
           $name = Html::escape($browser['name']);
@@ -91,18 +101,18 @@ class TfaTrustedBrowserSetup extends TfaTrustedBrowser implements TfaSetupInterf
         else {
           $message = t('Marked trusted !set, last used for log in !time', $vars);
         }
-        $form['existing']['trusted_browser_' . $browser_id] = array(
+        $form['existing']['trusted_browser_' . $browser_id] = [
           '#type' => 'checkbox',
           '#title' => $name,
           '#description' => $message,
           '#default_value' => 1,
-        );
+        ];
       }
     }
-    $form['actions']['save'] = array(
+    $form['actions']['save'] = [
       '#type' => 'submit',
       '#value' => t('Save'),
-    );
+    ];
     return $form;
   }
 
@@ -110,7 +120,8 @@ class TfaTrustedBrowserSetup extends TfaTrustedBrowser implements TfaSetupInterf
    * {@inheritdoc}
    */
   public function validateSetupForm(array $form, FormStateInterface $form_state) {
-    return TRUE; // Do nothing, no validation required.
+    // Do nothing, no validation required.
+    return TRUE;
   }
 
   /**
@@ -128,7 +139,7 @@ class TfaTrustedBrowserSetup extends TfaTrustedBrowser implements TfaSetupInterf
         }
       }
       if ($count) {
-        \Drupal::logger('tfa')->notice('Removed !num TFA trusted browsers during trusted browser setup', array('!num' => $count));
+        \Drupal::logger('tfa')->notice('Removed !num TFA trusted browsers during trusted browser setup', ['!num' => $count]);
       }
     }
     if (!empty($values['trust']) && $values['trust']) {
@@ -177,19 +188,17 @@ class TfaTrustedBrowserSetup extends TfaTrustedBrowser implements TfaSetupInterf
     return $this->deleteTrusted();
   }
 
-
-
   /**
    * {@inheritdoc}
    */
   public function getOverview($params) {
-    $trusted_browsers = array();
+    $trusted_browsers = [];
     foreach ($this->getTrustedBrowsers() as $device) {
       $date_formatter = \Drupal::service('date.formatter');
-      $vars = array(
+      $vars = [
         '!set' => $date_formatter->format($device['created']),
         '@browser' => $device['name'],
-      );
+      ];
       if (empty($device['last_used'])) {
         $message = t('@browser, set !set', $vars);
       }
@@ -199,38 +208,38 @@ class TfaTrustedBrowserSetup extends TfaTrustedBrowser implements TfaSetupInterf
       }
       $trusted_browsers[] = $message;
     }
-    $output = array(
-      'heading' => array(
+    $output = [
+      'heading' => [
         '#theme' => 'html_tag',
         '#tag' => 'h3',
         '#value' => t('Trusted browsers'),
-      ),
-      'description' => array(
+      ],
+      'description' => [
         '#theme' => 'html_tag',
         '#tag' => 'p',
         '#value' => t('Browsers that will not require a verification code during login.'),
-      ),
-    );
+      ],
+    ];
     if (!empty($trusted_browsers)) {
 
-      $output['list'] = array(
+      $output['list'] = [
         '#theme' => 'item_list',
         '#items' => $trusted_browsers,
         '#title' => t('Browsers that will not require a verification code during login.'),
-      );
+      ];
     }
-    $output['link'] = array(
+    $output['link'] = [
       '#theme' => 'links',
-      '#links' => array(
-        'admin' => array(
+      '#links' => [
+        'admin' => [
           'title' => 'Configure Trusted Browsers',
           'url' => Url::fromRoute('tfa.validation.setup', [
             'user' => $params['account']->id(),
             'method' => $params['plugin_id'],
           ]),
-        ),
-      ),
-    );
+        ],
+      ],
+    ];
 
     return $output;
   }
@@ -239,7 +248,14 @@ class TfaTrustedBrowserSetup extends TfaTrustedBrowser implements TfaSetupInterf
    * {@inheritdoc}
    */
   public function getHelpLinks() {
-    return $this->pluginDefinition['help_links'];
+    return ($this->pluginDefinition['helpLinks']) ?: '';
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getSetupMessages() {
+    return ($this->pluginDefinition['setupMessages']) ?: '';
   }
 
 }

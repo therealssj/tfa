@@ -22,7 +22,6 @@ class TfaRouteSubscriber extends RouteSubscriberBase {
   public function alterRoutes(RouteCollection $collection) {
     // Change path of user login to our overridden TFA login form.
     if ($route = $collection->get('user.login')) {
-      // $route->setPath('/tfalogin');.
       $route->setDefault('_form', '\Drupal\tfa\Form\TfaLoginForm');
     }
 

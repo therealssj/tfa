@@ -26,9 +26,7 @@ function tfa_help($route_name, RouteMatchInterface $route_match) {
 
 // @todo Not sure about the following functions. Left here for future reference.
 /**
- * Implements hook_user_login()
- *
- * @param $account
+ * Implements hook_user_login().
  */
 function tfa_user_login($account) {
   if (!\Drupal::config('tfa.settings')->get('enabled')) {
@@ -76,15 +74,10 @@ function tfa_user_login($account) {
 }
 
 /**
- * Implements hook_block_access()
+ * Implements hook_block_access().
  *
- * Remove access to the core user_login_block so we can replace with the TFA login block.
- *
- * @param \Drupal\block\Entity\Block $block
- * @param $operation
- * @param \Drupal\user\Entity\User $account
- *
- * @return \Drupal\Core\Access\AccessResult
+ * Remove access to the core user_login_block so we can replace with the TFA
+ * login block.
  */
 function tfa_block_access(Block $block, $operation, AccountInterface $account) {
   if (\Drupal::config('tfa.settings')->get('enabled') && $block->getPluginId() === 'user_login_block') {

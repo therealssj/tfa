@@ -82,7 +82,7 @@ class ResetSettingsForm extends ConfirmFormBase {
    *   The current state of the form.
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $config = $this->configFactory()->getEditable('tfa.settings')->delete();
+    $this->configFactory()->getEditable('tfa.settings')->delete();
     $this->userData->delete('tfa');
     drupal_set_message($this->t('TFA has been reset.'));
     $form_state->setRedirect('tfa.settings');

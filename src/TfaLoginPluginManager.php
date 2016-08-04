@@ -12,7 +12,7 @@ use Drupal\encrypt\EncryptServiceInterface;
 use Drupal\user\UserDataInterface;
 
 /**
- *
+ * The login plugin manager.
  */
 class TfaLoginPluginManager extends DefaultPluginManager {
 
@@ -84,7 +84,7 @@ class TfaLoginPluginManager extends DefaultPluginManager {
    * @return object
    *   The plugin instance.
    */
-  public function createInstance($plugin_id, array $configuration = array()) {
+  public function createInstance($plugin_id, array $configuration = []) {
     $plugin_definition = $this->getDefinition($plugin_id);
     $plugin_class = DefaultFactory::getPluginClass($plugin_id, $plugin_definition);
     // If the plugin provides a factory method, pass the container to it.
@@ -106,9 +106,9 @@ class TfaLoginPluginManager extends DefaultPluginManager {
    * @return array|null
    *   An array of login plugins.
    */
-  public function getPlugins($configuration = array()) {
+  public function getPlugins($configuration = []) {
     $plugin_ids = $this->tfaSettings->get('login_plugins');
-    $plugins = array();
+    $plugins = [];
     if (!empty($plugin_ids)) {
       foreach ($plugin_ids as $plugin_id) {
         $plugins[$plugin_id] = $this->createInstance($plugin_id, $configuration);

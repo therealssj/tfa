@@ -69,10 +69,10 @@ class TfaValidationTest extends WebTestBase {
     $validation_plugin->storeSeed(self::$seed);
 
     // Login.
-    $edit = array(
+    $edit = [
       'name' => $account->getUsername(),
       'pass' => $account->pass_raw,
-    );
+    ];
     // Do not use drupalLogin as it does actual login.
     $this->drupalPostForm('user/login', $edit, t('Log in'));
     $this->assertText($this->uiStrings('app-desc'));
@@ -82,18 +82,18 @@ class TfaValidationTest extends WebTestBase {
     $login_hash = array_pop($url_parts);
 
     // Try invalid code.
-    $edit = array(
+    $edit = [
       'code' => substr(str_shuffle(self::$seed), 0, 6),
-    );
+    ];
     $this->drupalPostForm('tfa/' . $account->id() . '/' . $login_hash, $edit, t('Verify'));
     $this->assertText($this->uiStrings('invalid-code-retry'));
 
     // Try valid code.
     // Generate a code.
     $code = $this->auth->otp->totp(Base32::decode(self::$seed));
-    $edit = array(
+    $edit = [
       'code' => $code,
-    );
+    ];
 
     $this->drupalPostForm('tfa/' . $account->id() . '/' . $login_hash, $edit, t('Verify'));
     $this->assertResponse(200);
@@ -101,19 +101,19 @@ class TfaValidationTest extends WebTestBase {
 
     // Check for replay.
     $this->drupalLogout();
-    $edit = array(
+    $edit = [
       'name' => $account->getUsername(),
       'pass' => $account->pass_raw,
-    );
+    ];
 
     // Do not use drupalLogin as it does actual login.
     $this->drupalPostForm('user/login', $edit, t('Log in'));
     $url_parts = explode('/', $this->url);
     $login_hash = array_pop($url_parts);
 
-    $edit = array(
+    $edit = [
       'code' => $code,
-    );
+    ];
 
     $this->drupalPostForm('tfa/' . $account->id() . '/' . $login_hash, $edit, t('Verify'));
     $this->assertText($this->uiStrings('code-already-used'));
@@ -134,10 +134,10 @@ class TfaValidationTest extends WebTestBase {
     $validation_plugin->storeSeed(self::$seed);
 
     // Login.
-    $edit = array(
+    $edit = [
       'name' => $account->getUsername(),
       'pass' => $account->pass_raw,
-    );
+    ];
     // Do not use drupalLogin as it does actual login.
     $this->drupalPostForm('user/login', $edit, t('Log in'));
     $this->assertText($this->uiStrings('app-desc'));
@@ -147,18 +147,18 @@ class TfaValidationTest extends WebTestBase {
     $login_hash = array_pop($url_parts);
     //
     // Try invalid code.
-    $edit = array(
+    $edit = [
       'code' => substr(str_shuffle(self::$seed), 0, 6),
-    );
+    ];
     $this->drupalPostForm('tfa/' . $account->id() . '/' . $login_hash, $edit, t('Verify'));
     $this->assertText($this->uiStrings('invalid-code-retry'));
 
     // Try valid code.
     // Generate a code.
     $code = $this->auth->otp->hotp(Base32::decode(self::$seed), 1);
-    $edit = array(
+    $edit = [
       'code' => $code,
-    );
+    ];
 
     $this->drupalPostForm('tfa/' . $account->id() . '/' . $login_hash, $edit, t('Verify'));
     $this->assertResponse(200);
@@ -166,19 +166,19 @@ class TfaValidationTest extends WebTestBase {
 
     // Check for replay.
     $this->drupalLogout();
-    $edit = array(
+    $edit = [
       'name' => $account->getUsername(),
       'pass' => $account->pass_raw,
-    );
+    ];
 
     // Do not use drupalLogin as it does actual login.
     $this->drupalPostForm('user/login', $edit, t('Log in'));
     $url_parts = explode('/', $this->url);
     $login_hash = array_pop($url_parts);
 
-    $edit = array(
+    $edit = [
       'code' => $code,
-    );
+    ];
 
     $this->drupalPostForm('tfa/' . $account->id() . '/' . $login_hash, $edit, t('Verify'));
     $this->assertText($this->uiStrings('code-already-used'));
@@ -205,10 +205,10 @@ class TfaValidationTest extends WebTestBase {
     $validation_plugin->storeCodes(['222 333 444']);
 
     // Login.
-    $edit = array(
+    $edit = [
       'name' => $account->getUsername(),
       'pass' => $account->pass_raw,
-    );
+    ];
     // Do not use drupalLogin as it does actual login.
     $this->drupalPostForm('user/login', $edit, t('Log in'));
     // Get login hash. Could user tfa_login_hash() but would require reloading
@@ -217,16 +217,16 @@ class TfaValidationTest extends WebTestBase {
     $login_hash = array_pop($url_parts);
 
     // Try invalid recovery code.
-    $edit = array(
+    $edit = [
       'code' => '111 222 333',
-    );
+    ];
     $this->drupalPostForm('tfa/' . $account->id() . '/' . $login_hash, $edit, t('Verify'));
     $this->assertText($this->uiStrings('invalid-recovery-code'));
 
     // Try valid recovery code.
-    $edit = array(
+    $edit = [
       'code' => '222 333 444',
-    );
+    ];
     $this->drupalPostForm('tfa/' . $account->id() . '/' . $login_hash, $edit, t('Verify'));
     $this->assertResponse(200);
     $this->assertText($account->getUsername());
