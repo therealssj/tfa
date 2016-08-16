@@ -18,7 +18,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * @TfaValidation(
  *   id = "tfa_hotp",
- *   label = @Translation("TFA Hotp"),
+ *   label = @Translation("TFA Hmac-based OTP(HOTP)"),
  *   description = @Translation("TFA Hotp Validation Plugin"),
  *   fallbacks = {
  *    "tfa_recovery_code"

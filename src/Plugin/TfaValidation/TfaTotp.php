@@ -18,7 +18,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * @TfaValidation(
  *   id = "tfa_totp",
- *   label = @Translation("TFA Totp"),
+ *   label = @Translation("TFA Time-based OTP(TOTP)"),
  *   description = @Translation("TFA Totp Validation Plugin"),
  *   fallbacks = {
  *    "tfa_recovery_code"
