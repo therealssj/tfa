@@ -132,13 +132,21 @@ class SettingsForm extends ConfigFormBase {
     // Get Send Plugins.
     $send_plugins = $this->tfaSend->getDefinitions();
 
+    // Get Setup Plugins.
+    $setup_plugins = $this->tfaSetup->getDefinitions();
+
     // Get Validation Plugins.
     $validation_plugins = $this->tfaValidation->getDefinitions();
     // Get validation plugin labels and their fallbacks.
     $validation_plugins_labels = [];
     $validation_plugins_fallbacks = [];
     $fallback_plugins_labels = [];
-    foreach ($validation_plugins as $plugin) {
+    foreach ($validation_plugins as $key => $plugin) {
+      // Skip this plugin if no setup class is available.
+      if (!isset($setup_plugins[$key . '_setup'])){
+        unset($validation_plugins[$key]);
+        continue;
+      }
       if ($plugin['isFallback']) {
         $fallback_plugins_labels[$plugin['id']] = $plugin['label']->render();
         continue;
@@ -148,7 +156,6 @@ class SettingsForm extends ConfigFormBase {
         $validation_plugins_fallbacks[$plugin['id']] = $plugin['fallbacks'];
       }
     }
-
     // Fetching all available encrpytion profiles.
     $encryption_profiles = $this->encryptionProfileManager->getAllEncryptionProfiles();
 
@@ -376,12 +383,10 @@ class SettingsForm extends ConfigFormBase {
       $this->userData->delete('tfa');
     }
 
-    $setup_plugins = $form_state->getValue('tfa_setup') ?: [];
     $send_plugins = $form_state->getValue('tfa_send') ?: [];
     $login_plugins = $form_state->getValue('tfa_login') ?: [];
     $this->config('tfa.settings')
       ->set('enabled', $form_state->getValue('tfa_enabled'))
-      ->set('setup_plugins', array_filter($setup_plugins))
       ->set('send_plugins', array_filter($send_plugins))
       ->set('login_plugins', array_filter($login_plugins))
       ->set('validation_plugin', $validation_plugin)

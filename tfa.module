@@ -35,13 +35,3 @@ function tfa_block_access(Block $block, $operation, AccountInterface $account) {
     return AccessResult::forbidden();
   }
 }
-
-/**
- * Implements hook_block_alter().
- *
- * Removes the User Login Block if the TFA module is enabled. The TFA User Login
- * block will function with or without TFA actually being enabled.
- */
-function tfa_block_alter(&$definitions) {
-  unset($definitions['user_login_block']);
-}
