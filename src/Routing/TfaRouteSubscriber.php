@@ -24,7 +24,6 @@ class TfaRouteSubscriber extends RouteSubscriberBase {
     if ($route = $collection->get('user.login')) {
       $route->setDefault('_form', '\Drupal\tfa\Form\TfaLoginForm');
     }
-
   }
 
 }

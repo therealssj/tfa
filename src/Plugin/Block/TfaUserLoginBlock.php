@@ -20,8 +20,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * )
  */
 class TfaUserLoginBlock extends UserLoginBlock {
-
-
   /**
    * @var TFA Configuration Settings
    */

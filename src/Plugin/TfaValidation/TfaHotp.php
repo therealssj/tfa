@@ -64,7 +64,14 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
     $this->auth->otp = new Otp();
     $this->auth->ga  = new GoogleAuthenticator();
     $this->alreadyAccepted = FALSE;
-    $settings = \Drupal::config('tfa.settings')->get('validation_plugin_settings')['tfa_hotp'];
+    $plugin_settings = \Drupal::config('tfa.settings')->get('validation_plugin_settings');
+    $settings = isset($plugin_settings['tfa_hotp']) ? $plugin_settings['tfa_hotp'] : [];
+    if (empty($settings)) {
+      $settings = [
+        'counter_window' => 10,
+        'name_prefix' => 'TFA'
+      ];
+    }
     $this->counterWindow = $settings['counter_window'];
     $this->namePrefix = $settings['name_prefix'];
   }
@@ -189,7 +196,7 @@ class TfaHotp extends TfaBasePlugin implements TfaValidationInterface {
       // Get OTP seed.
       $seed = $this->getSeed();
       $counter = $this->getHotpCounter();
-      $this->isValid = ($seed && ($counter = $this->auth->otp->checkHotpResync(Base32::decode($seed), $counter, $code)));
+      $this->isValid = ($seed && ($counter = $this->auth->otp->checkHotpResync(Base32::decode($seed), $counter, $code, $this->counterWindow)));
       $this->setUserData('tfa', ['tfa_hotp_counter' => ++$counter], $this->uid, $this->userData);
     }
     return $this->isValid;

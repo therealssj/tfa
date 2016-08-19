@@ -124,6 +124,7 @@ class TfaLoginForm extends UserLoginForm {
     // Uncomment when things go wrong and you get logged out.
     // user_login_finalize($account);
     // $form_state->setRedirect('<front>');
+    // return;
     $tfa_enabled = intval($this->config('tfa.settings')->get('enabled'));
     $allowed_skips = intval($this->config('tfa.settings')->get('validation_skip'));
 

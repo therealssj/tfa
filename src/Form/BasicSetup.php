@@ -67,7 +67,7 @@ class BasicSetup extends FormBase {
       '#value' => $user,
     ];
     $tfa_data = $this->tfaGetTfaData($user->id(), $this->userData);
-    $enabled = isset($tfa_data['status']) && $tfa_data['status'] ? TRUE : FALSE;
+    $enabled = isset($tfa_data['status'], $tfa_data['data']) && !empty($tfa_data['data']['plugins']) && $tfa_data['status'] ? TRUE : FALSE;
 
     $storage = $form_state->getStorage();
     // Always require a password on the first time through.

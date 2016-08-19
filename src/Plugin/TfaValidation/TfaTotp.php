@@ -64,7 +64,14 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
     $this->auth->otp = new Otp();
     $this->auth->ga = new GoogleAuthenticator();
     // Allow codes within tolerance range of 3 * 30 second units.
-    $settings = \Drupal::config('tfa.settings')->get('validation_plugin_settings')['tfa_totp'];
+    $plugin_settings = \Drupal::config('tfa.settings')->get('validation_plugin_settings');
+    $settings = isset($plugin_settings['tfa_totp']) ? $plugin_settings['tfa_totp']: [];
+    if (empty($settings)) {
+      $settings = [
+        'time_skew' => 30,
+        'name_prefix' => 'TFA'
+      ];
+    }
     $this->timeSkew = $settings['time_skew'];
     $this->namePrefix = $settings['name_prefix'];
     $this->alreadyAccepted = FALSE;

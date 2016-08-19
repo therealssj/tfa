@@ -5,7 +5,7 @@ tfa.settings:
     enabled:
       type: integer
       label: 'TFA enabled'
-    send_plugin:
+    send_plugins:
      type: mapping
      label: 'Enabled send plugins'
      sequence:
@@ -19,8 +19,10 @@ tfa.settings:
       type: string
       label: 'Current validation plugin'
     validation_plugin_settings:
-      type: tfa.validation.plugin.config.[%parent.validation_plugin]
       label: 'TFA validation plugin configuration'
+      type: sequence
+      sequence:
+        type: tfa.validation.plugin.config.[%key]
     fallback_plugins:
       type: sequence
       label: 'Fallback plugins'
@@ -53,7 +55,7 @@ default.fallback.config:
       type: mapping
       label: 'Default fallback settings'
       mapping:
-        recovery_code_amount:
+        recovery_codes_amount:
           type: integer
           label: 'Recovery codes amount. Default is 10.'
     weight:
