@@ -122,7 +122,7 @@ class BasicOverview extends FormBase {
 
         }
 
-        $send_plugin = $configuration['send_plugin'];
+        $send_plugin = $configuration['send_plugins'];
         if ($send_plugin) {
           $output[$send_plugin] = $this->tfaPluginSetupFormOverview($send_plugin, $user, $enabled);
         }
@@ -150,7 +150,7 @@ class BasicOverview extends FormBase {
    *   The setup plugin.
    * @param object $account
    *   Current user account.
-   * @param array $user_tfa
+   * @param bool $enabled
    *   Tfa data for current user.
    *
    * @return array

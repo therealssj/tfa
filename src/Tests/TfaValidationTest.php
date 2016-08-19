@@ -3,23 +3,13 @@
 namespace Drupal\tfa\Tests;
 
 use Base32\Base32;
-use Drupal\simpletest\WebTestBase;
-use Otp\GoogleAuthenticator;
-use Otp\Otp;
 
 /**
  * Tests the functionality of the Tfa plugins.
  *
  * @group Tfa
  */
-class TfaValidationTest extends WebTestBase {
-
-  /**
-   * Object containing the external validation library.
-   *
-   * @var GoogleAuthenticator
-   */
-  protected $auth;
+class TfaValidationTest extends TFATestBase {
 
   /**
    * The validation plugin manager to fetch plugin information.
@@ -36,40 +26,13 @@ class TfaValidationTest extends WebTestBase {
   protected static $seed = "12345678901234567890";
 
   /**
-   * Test key for encryption
-   *
-   * @var \Drupal\key\Entity\Key
-   */
-  protected $testKey;
-
-  /**
-   * Exempt from strict schema checking.
-   *
-   * @see \Drupal\Core\Config\Testing\ConfigSchemaChecker
-   *
-   * @var bool
-   */
-  protected $strictConfigSchema = FALSE;
-
-  /**
-   * {@inheritdoc}
-   */
-  public static $modules = ['tfa', 'node', 'encrypt', 'encrypt_test', 'key', 'ga_login'];
-
-  /**
    * {@inheritdoc}
    */
   public function setUp() {
     // Enable TFA module and the test module.
     parent::setUp();
 
-    // OTP class to do GA Login validation.
-    $this->auth = new \StdClass();
-    $this->auth->otp = new Otp();
-    $this->auth->ga  = new GoogleAuthenticator();
     $this->tfaValidationManager = \Drupal::service('plugin.manager.tfa.validation');
-    $this->generateRoleKey();
-    $this->generateEncryptionProfile();
   }
 
   /**
@@ -276,45 +239,6 @@ class TfaValidationTest extends WebTestBase {
       case 'code-already-used':
         return 'Invalid code, it was recently used for a login. Please try a new code.';
     }
-  }
-
-  /**
-   * Generate a Role key.
-   */
-  public function generateRoleKey() {
-    // Generate a key; at this stage the key hasn't been configured completely.
-    $values = [
-      'id' => 'testing_key_128',
-      'label' => 'Testing Key 128 bit',
-      'key_type' => "encryption",
-      'key_type_settings' => ['key_size' => '128'],
-      'key_provider' => 'config',
-      'key_input' => 'none',
-      // This is actually 16bytes but oh well..
-      'key_provider_settings' => ['key_value' => 'mustbesixteenbit', 'base64_encoded' => FALSE],
-    ];
-    \Drupal::entityTypeManager()
-      ->getStorage('key')
-      ->create($values)
-      ->save();
-    $this->testKey = \Drupal::service('key.repository')->getKey('testing_key_128');
-  }
-
-  /**
-   * Generate an Encryption profile for a Role key.
-   */
-  public function generateEncryptionProfile() {
-    $values = [
-      'id' => 'test_encryption_profile',
-      'label' => 'Test encryption profile',
-      'encryption_method' => 'test_encryption_method',
-      'encryption_key' => $this->testKey->id()
-    ];
-
-    \Drupal::entityTypeManager()
-      ->getStorage('encryption_profile')
-      ->create($values)
-      ->save();
   }
 
 }

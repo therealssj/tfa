@@ -264,8 +264,11 @@ class BasicSetup extends FormBase {
     $enabled_plugin = $config->get('validation_plugin');
     $steps = [
       $config->get('validation_plugin'),
-      key($config->get('fallback_plugins')[$enabled_plugin]),
     ];
+
+    if (isset($config->get('fallback_plugins')[$enabled_plugin])) {
+      $steps[] =  key($config->get('fallback_plugins')[$enabled_plugin]);
+    }
 
     $login_plugins = $config->get('login_plugins');
 
