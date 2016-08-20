@@ -6,12 +6,12 @@ tfa.settings:
       type: integer
       label: 'TFA enabled'
     send_plugins:
-     type: mapping
+     type: sequence
      label: 'Enabled send plugins'
      sequence:
        type: tfa.send.config.[%key]
     login_plugins:
-      type: mapping
+      type: sequence
       label: 'Enabled Login plugins'
       sequence:
         type: tfa.login.config.[%key]

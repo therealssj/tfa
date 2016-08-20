@@ -5,7 +5,6 @@ validation_plugin: 'tfa_totp'
 validation_plugin_settings: { }
 fallback_plugins: { }
 help_text: 'Contact support to reset your access'
-name_prefix: ''
 validation_skip: 3
 encryption: ''
 trust_cookie_expiration: 2592000

@@ -6,16 +6,6 @@
  */
 
 /**
- * Implements hook_install().
- */
-function tfa_install() {
-  // Set default values.
-  \Drupal::configFactory()->getEditable('tfa.settings')
-         ->set('name_prefix', \Drupal::config('system.site')->get('name'))
-         ->save();
-}
-
-/**
  * Implements hook_requirements().
  */
 function tfa_requirements($phase) {

@@ -14,15 +14,6 @@ class TFATestBase  extends WebTestBase {
   protected $auth;
 
   /**
-   * Exempt from strict schema checking.
-   *
-   * @see \Drupal\Core\Config\Testing\ConfigSchemaChecker
-   *
-   * @var bool
-   */
-  protected $strictConfigSchema = FALSE;
-
-  /**
    * Test key for encryption
    *
    * @var \Drupal\key\Entity\Key
