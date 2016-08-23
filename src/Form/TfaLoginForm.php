@@ -164,11 +164,6 @@ class TfaLoginForm extends UserLoginForm {
       }
       elseif ($this->ready($tfaValidationPlugin) && !$this->loginAllowed($account)) {
 
-        // Restart flood levels, session context, and TFA process.
-        // flood_clear_event('tfa_validate');
-        // flood_register_event('tfa_begin');
-        // $query = drupal_get_query_parameters();
-
         // Begin TFA and set process context.
         // @todo This is used in send plugins which has not been implemented
         // yet.

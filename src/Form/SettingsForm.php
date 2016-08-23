@@ -344,6 +344,41 @@ class SettingsForm extends ConfigFormBase {
       ];
     }
 
+    $form['tfa_flood'] = [
+      '#type' => 'fieldset',
+      '#title' => $this->t('TFA Flood Settings'),
+      '#description' => $this->t('Configure the TFA Flood Settings.'),
+    ];
+
+    // Flood control identifier.
+    $form['tfa_flood']['tfa_flood_uid_only'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Flood Control With UID Only'),
+      '#default_value' => ($config->get('tfa_flood_uid_only')) ?: 0,
+      '#description' => $this->t('Flood control on the basis of uid only.'),
+    ];
+
+    // Flood window. Defaults to 5mins.
+    $form['tfa_flood']['tfa_flood_window'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('TFA Flood Window'),
+      '#default_value' => ($config->get('tfa_flood_window')) ?: 300,
+      '#description' => 'TFA Flood Window.',
+      '#size' => 5,
+      '#states' => $enabled_state,
+      '#required' => TRUE,
+    ];
+
+    // Flood threshold. Defaults to 6 failed attempts.
+    $form['tfa_flood']['tfa_flood_threshold'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('TFA Flood Threshold'),
+      '#default_value' => ($config->get('tfa_flood_threshold')) ?: 6,
+      '#description' => 'TFA Flood Threshold.',
+      '#size' => 2,
+      '#required' => TRUE,
+    ];
+
     $form['actions']['#type'] = 'actions';
     $form['actions']['submit'] = [
       '#type' => 'submit',
@@ -394,6 +429,9 @@ class SettingsForm extends ConfigFormBase {
       ->set('fallback_plugins', $fallback_plugins)
       ->set('validation_skip', $form_state->getValue('validation_skip'))
       ->set('encryption', $form_state->getValue('encryption_profile'))
+      ->set('tfa_flood_uid_only', $form_state->getValue('tfa_flood_uid_only'))
+      ->set('tfa_flood_window', $form_state->getValue('tfa_flood_window'))
+      ->set('tfa_flood_threshold', $form_state->getValue('tfa_flood_threshold'))
       ->save();
 
     parent::submitForm($form, $form_state);

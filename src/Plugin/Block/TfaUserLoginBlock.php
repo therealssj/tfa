@@ -21,7 +21,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class TfaUserLoginBlock extends UserLoginBlock {
   /**
-   * @var TFA Configuration Settings
+   * TFA configuration object.
+   *
+   * @var \Drupal\Core\Config\ImmutableConfig
    */
   protected $tfaSettings;
 

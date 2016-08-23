@@ -25,13 +25,6 @@ class TfaValidationPluginManager extends DefaultPluginManager {
   protected $userData;
 
   /**
-   * TFA configuration object.
-   *
-   * @var \Drupal\Core\Config\ImmutableConfig
-   */
-  protected $tfaSettings;
-
-  /**
    * Encryption profile manager.
    *
    * @var \Drupal\encrypt\EncryptionProfileManagerInterface
@@ -68,7 +61,6 @@ class TfaValidationPluginManager extends DefaultPluginManager {
     parent::__construct('Plugin/TfaValidation', $namespaces, $module_handler, 'Drupal\tfa\Plugin\TfaValidationInterface', 'Drupal\tfa\Annotation\TfaValidation');
     $this->alterInfo('tfa_validation');
     $this->setCacheBackend($cache_backend, 'tfa_validation');
-    $this->tfaSettings = $config_factory->get('tfa.settings');
     $this->userData = $user_data;
     $this->encryptService = $encrypt_service;
     $this->encryptionProfileManager = $encryption_profile_manager;
